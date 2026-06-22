@@ -486,7 +486,6 @@ with tab1:
                 st.session_state["docs"] = docs
                 st.session_state["doc_source"] = source_used
                 st.session_state["company_display"] = company_display
-                st.session_state["company_display"] = company_display
 
     if "docs" in st.session_state:
         docs = st.session_state["docs"]

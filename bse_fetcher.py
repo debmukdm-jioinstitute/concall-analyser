@@ -6,6 +6,8 @@ Tier 2: NSE with symbol alias (handles renames like ZOMATO→ETERNAL)
 Tier 3: Screener.in company page scraping (PDF links, ~60% additional coverage)
 """
 
+from __future__ import annotations
+
 import re
 import time
 import requests

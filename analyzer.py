@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+_api_key = os.getenv("GROQ_API_KEY")
+if not _api_key:
+    raise RuntimeError(
+        "GROQ_API_KEY not set. Add it to your .env file or Streamlit secrets."
+    )
+client = Groq(api_key=_api_key)
 
 SYSTEM_PROMPT = """You are a senior equity research analyst at a bulge-bracket investment bank covering Indian equities.
 You have 15 years of experience analysing NSE/BSE listed companies across sectors.
