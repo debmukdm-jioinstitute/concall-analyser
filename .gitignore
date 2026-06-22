@@ -1,0 +1,25 @@
+# API keys — NEVER commit
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Mac
+.DS_Store
+.AppleDouble
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Venv
+venv/
+.venv/
+env/

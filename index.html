@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConcallAnalyser — AI-Powered Earnings Intelligence for India</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --purple: #6C63FF; --purple-dark: #5A52E0; --purple-light: #EEF0FF;
+    --navy: #1A1B3A; --gray: #64748B; --light: #F8F9FF; --white: #FFFFFF;
+    --green: #10B981; --border: #E2E8F0;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--white); color: var(--navy); }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 60px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px); z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--navy); text-decoration: none; cursor: pointer; }
+  .logo span { color: var(--purple); }
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--gray); font-size: 15px; font-weight: 500; transition: color 0.2s; padding-bottom: 3px; border-bottom: 2px solid transparent; }
+  .nav-links a:hover { color: var(--navy); border-bottom-color: var(--purple); }
+  .nav-links a.active { color: var(--navy); border-bottom-color: var(--purple); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .btn-ghost { background: none; border: none; font-size: 15px; font-weight: 500; color: var(--navy); cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
+  .btn-ghost:hover { background: var(--light); }
+  .btn-primary { background: var(--purple); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary:hover { background: var(--purple-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(108,99,255,0.35); }
+  .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+
+  /* HERO */
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; padding: 70px 60px 80px; background: linear-gradient(135deg, #F8F9FF 0%, #EEF0FF 100%); align-items: center; }
+  .hero-left { max-width: 520px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; background: white; border: 1px solid #D8D5FF; color: var(--purple); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 6px 14px; border-radius: 100px; margin-bottom: 28px; }
+  h1 { font-size: 52px; font-weight: 800; line-height: 1.12; margin-bottom: 20px; }
+  h1 em { color: var(--purple); font-style: normal; }
+  .hero-sub { font-size: 17px; color: var(--gray); line-height: 1.65; margin-bottom: 36px; }
+  .hero-btns { display: flex; gap: 14px; margin-bottom: 44px; flex-wrap: wrap; }
+  .hero-btns .btn-primary { padding: 13px 26px; font-size: 15px; }
+  .btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--navy); border: 1.5px solid var(--border); padding: 13px 22px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--purple); color: var(--purple); transform: translateY(-1px); }
+  .pills { display: flex; gap: 28px; flex-wrap: wrap; }
+  .pill { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray); }
+  .pill svg { color: var(--purple); width: 18px; height: 18px; flex-shrink: 0; }
+  .pill strong { color: var(--navy); font-size: 14px; display: block; }
+
+  /* DEMO CARD */
+  .demo-card { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(108,99,255,0.12); overflow: hidden; border: 1px solid var(--border); }
+  .demo-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
+  .demo-header-left h3 { font-size: 16px; font-weight: 700; }
+  .demo-header-left p { font-size: 12px; color: var(--gray); margin-top: 3px; }
+  .btn-download { display: inline-flex; align-items: center; gap: 6px; background: var(--light); border: 1px solid var(--border); color: var(--navy); padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-download:hover { background: var(--purple-light); border-color: var(--purple); color: var(--purple); }
+  .demo-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 24px; }
+  .demo-section { background: var(--light); border-radius: 12px; padding: 16px; }
+  .demo-section h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .demo-section p { font-size: 12px; color: var(--gray); line-height: 1.6; }
+  .read-more { color: var(--purple); font-size: 12px; font-weight: 600; margin-top: 10px; display: block; cursor: pointer; text-decoration: none; }
+  .read-more:hover { text-decoration: underline; }
+  .full-summary { display: none; font-size: 12px; color: var(--gray); margin-top: 8px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 8px; }
+  .full-summary.open { display: block; }
+  .score-label { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 4px; }
+  .score-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .gauge-svg { width: 100%; height: 80px; }
+  .topic-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .topic-name { font-size: 12px; color: var(--gray); width: 130px; flex-shrink: 0; }
+  .topic-bar-bg { flex: 1; background: #E2E8F0; border-radius: 4px; height: 6px; overflow: hidden; }
+  .topic-bar { height: 6px; border-radius: 4px; background: var(--purple); width: 0; transition: width 1s ease; }
+  .topic-pct { font-size: 12px; font-weight: 600; color: var(--purple); width: 32px; text-align: right; }
+  .donut-container { position: relative; width: 100px; height: 100px; margin: 0 auto 10px; }
+  .donut-container svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .legend { display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--gray); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-right: 6px; }
+  .legend-left { display: flex; align-items: center; }
+  .signal { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+  .signal.buy { background: #D1FAE5; color: #065F46; }
+
+  /* HOW IT WORKS */
+  #how-it-works { padding: 80px 60px; background: var(--light); }
+  #how-it-works h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  #how-it-works .section-sub { text-align: center; color: var(--gray); font-size: 16px; margin-bottom: 56px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; position: relative; }
+  .steps::before { content: ''; position: absolute; top: 28px; left: 12%; right: 12%; height: 2px; background: linear-gradient(to right, var(--purple), #A78BFA); z-index: 0; }
+  .step { text-align: center; position: relative; z-index: 1; }
+  .step-num { width: 56px; height: 56px; background: var(--purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; margin: 0 auto 16px; box-shadow: 0 4px 16px rgba(108,99,255,0.35); }
+  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .step p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+  /* FEATURES */
+  #features { padding: 80px 60px; background: white; }
+  #features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 48px; }
+  .features-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; }
+  .feature-card { background: var(--light); border-radius: 16px; padding: 24px 20px; border: 1px solid transparent; transition: all 0.25s; cursor: pointer; }
+  .feature-card:hover { border-color: var(--purple); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(108,99,255,0.12); }
+  .feature-icon { width: 44px; height: 44px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .feature-icon svg { width: 22px; height: 22px; color: var(--purple); }
+  .feature-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+  /* CTA SECTION */
+  .cta-section { padding: 80px 60px; background: linear-gradient(135deg, var(--purple) 0%, #A78BFA 100%); text-align: center; }
+  .cta-section h2 { font-size: 36px; font-weight: 800; color: white; margin-bottom: 16px; }
+  .cta-section p { font-size: 17px; color: rgba(255,255,255,0.85); margin-bottom: 36px; }
+  .btn-white { background: white; color: var(--purple); border: none; padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+  /* TRUST */
+  .trust { padding: 48px 60px; background: var(--light); border-top: 1px solid var(--border); }
+  .trust p { text-align: center; font-size: 14px; color: var(--gray); margin-bottom: 28px; }
+  .trust-logos { display: flex; align-items: center; justify-content: center; gap: 48px; flex-wrap: wrap; }
+  .trust-logo { font-size: 15px; font-weight: 700; color: #94A3B8; letter-spacing: 0.02em; transition: color 0.2s; cursor: default; }
+  .trust-logo:hover { color: var(--navy); }
+
+  /* FOOTER */
+  footer { background: var(--navy); color: rgba(255,255,255,0.6); text-align: center; padding: 24px 60px; font-size: 13px; }
+  footer a { color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 12px; }
+  footer a:hover { color: white; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 20px; padding: 40px; max-width: 420px; width: 90%; position: relative; animation: modalIn 0.25s ease; }
+  @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gray); line-height: 1; }
+  .modal-close:hover { color: var(--navy); }
+  .modal h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--gray); font-size: 14px; margin-bottom: 24px; }
+  .modal input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 14px; outline: none; transition: border-color 0.2s; }
+  .modal input:focus { border-color: var(--purple); }
+  .modal .btn-primary { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+  .modal-divider { text-align: center; color: var(--gray); font-size: 13px; margin: 16px 0; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 2000; transition: transform 0.35s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* MOBILE */
+  .mobile-menu { display: none; flex-direction: column; gap: 0; position: absolute; top: 100%; left: 0; right: 0; background: white; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a { padding: 16px 24px; text-decoration: none; color: var(--navy); font-size: 16px; font-weight: 500; border-bottom: 1px solid var(--border); }
+  .mobile-menu a:hover { background: var(--light); }
+
+  @media (max-width: 1024px) {
+    nav { padding: 16px 24px; position: relative; }
+    .nav-links { display: none; }
+    .hamburger { display: block; }
+    .hero { grid-template-columns: 1fr; padding: 40px 24px 60px; }
+    .demo-card { display: none; }
+    h1 { font-size: 36px; }
+    #features { padding: 60px 24px; }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    #how-it-works { padding: 60px 24px; }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+    .steps::before { display: none; }
+    .cta-section { padding: 60px 24px; }
+    .trust { padding: 40px 24px; }
+    footer { padding: 20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal" onclick="closeModal('loginModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal('loginModal')">×</button>
+    <h3>Welcome back</h3>
+    <p>Log in to access your saved analyses and history.</p>
+    <input type="email" placeholder="Email address" id="loginEmail">
+    <input type="password" placeholder="Password">
+    <a href="http://localhost:8501" class="btn-primary" style="display:flex;justify-content:center;margin-top:4px">Log In</a>
+    <div class="modal-divider">— or —</div>
+    <a href="http://localhost:8501" class="btn-primary" style="display:flex;justify-content:center;background:#4285F4">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </a>
+    <p style="text-align:center;font-size:13px;color:var(--gray);margin-top:16px">
+      No account? <a href="http://localhost:8501" style="color:var(--purple);font-weight:600">Get Started Free →</a>
+    </p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="logo" href="#top">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect x="2" y="10" width="3" height="8" rx="1.5" fill="#6C63FF"/>
+      <rect x="7" y="6" width="3" height="16" rx="1.5" fill="#6C63FF"/>
+      <rect x="12" y="3" width="3" height="22" rx="1.5" fill="#6C63FF"/>
+      <rect x="17" y="7" width="3" height="14" rx="1.5" fill="#6C63FF"/>
+      <rect x="22" y="11" width="3" height="6" rx="1.5" fill="#6C63FF"/>
+    </svg>
+    Concall<span>Analyser</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#top" class="active" data-section="top">Home</a></li>
+    <li><a href="#features" data-section="features">Features</a></li>
+    <li><a href="#how-it-works" data-section="how-it-works">How It Works</a></li>
+    <li><a href="#cta" data-section="cta">About</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-ghost" onclick="openModal('loginModal')">Log in</button>
+    <a href="http://localhost:8501" class="btn-primary" target="_blank">Get Started Free</a>
+    <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#top" onclick="closeMobileMenu()">Home</a>
+    <a href="#features" onclick="closeMobileMenu()">Features</a>
+    <a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a>
+    <a href="#cta" onclick="closeMobileMenu()">About</a>
+    <a href="#" onclick="openModal('loginModal');closeMobileMenu()">Log In</a>
+    <a href="http://localhost:8501" target="_blank" style="color:var(--purple);font-weight:700">Get Started Free →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-left">
+    <div class="badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      AI-POWERED CONCALL INTELLIGENCE
+    </div>
+    <h1>Turn Earnings Calls<br>into <em>Actionable Insights</em></h1>
+    <p class="hero-sub">ConcallAnalyser uses AI to analyse Indian company earnings calls — get instant sentiment scores, management tone, key risks, and intraday trade signals.</p>
+    <div class="hero-btns">
+      <a href="http://localhost:8501" class="btn-primary" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Analyse a Concall
+      </a>
+      <a href="#how-it-works" class="btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        See How It Works
+      </a>
+    </div>
+    <div class="pills">
+      <div class="pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div><strong>Save Hours</strong>Automate analysis</div>
+      </div>
+      <div class="pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <div><strong>Deeper Insights</strong>AI-powered summaries</div>
+      </div>
+      <div class="pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Better Decisions</strong>Data-driven clarity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO CARD -->
+  <div class="demo-card">
+    <div class="demo-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;background:var(--purple-light);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><rect x="2" y="10" width="3" height="8" rx="1.5" fill="#6C63FF"/><rect x="7" y="6" width="3" height="16" rx="1.5" fill="#6C63FF"/><rect x="12" y="3" width="3" height="22" rx="1.5" fill="#6C63FF"/><rect x="17" y="7" width="3" height="14" rx="1.5" fill="#6C63FF"/><rect x="22" y="11" width="3" height="6" rx="1.5" fill="#6C63FF"/></svg>
+        </div>
+        <div class="demo-header-left">
+          <h3>Infosys Q2 FY25 Earnings Call</h3>
+          <p>Oct 17, 2024 &nbsp;•&nbsp; 5:00 PM IST &nbsp;•&nbsp; 58:42 min</p>
+        </div>
+      </div>
+      <button class="btn-download" onclick="showToast('📄 Report downloaded!')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Report
+      </button>
+    </div>
+
+    <div class="demo-body">
+      <div class="demo-section">
+        <h4>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6C63FF" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          AI Summary
+        </h4>
+        <p>Infosys reported revenue of ₹40,986 Cr, up 5.1% YoY. Management raised FY25 guidance to 4.5–5%. Deal wins at $2.4B TCV.</p>
+        <div class="full-summary" id="fullSummary">
+          AI services pipeline growing across BFSI and manufacturing verticals. Headcount stable at 3.17L. Attrition improved to 12.9%. Management tone: Confident. No red flags detected in Q&A.
+        </div>
+        <a class="read-more" onclick="toggleSummary()">Read Full Summary ↓</a>
+      </div>
+
+      <div class="demo-section" style="text-align:center">
+        <h4 style="justify-content:center">Sentiment Score</h4>
+        <svg class="gauge-svg" viewBox="0 0 120 70">
+          <path d="M10 65 A50 50 0 0 1 110 65" fill="none" stroke="#E2E8F0" stroke-width="10" stroke-linecap="round"/>
+          <path d="M10 65 A50 50 0 0 1 110 65" fill="none" stroke="#10B981" stroke-width="10" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="47" id="gaugePath"/>
+          <text x="60" y="62" text-anchor="middle" font-size="22" font-weight="800" fill="#1A1B3A">78</text>
+        </svg>
+        <div class="score-label">● Positive</div>
+        <div class="score-sub">Overall Tone</div>
+        <div style="margin-top:10px"><span class="signal buy">🟢 BUY SIGNAL</span></div>
+      </div>
+
+      <div class="demo-section">
+        <h4>Key Topics</h4>
+        <div class="topic-row"><span class="topic-name">Revenue & Growth</span><div class="topic-bar-bg"><div class="topic-bar" data-width="92"></div></div><span class="topic-pct">92%</span></div>
+        <div class="topic-row"><span class="topic-name">Deal Wins</span><div class="topic-bar-bg"><div class="topic-bar" data-width="85"></div></div><span class="topic-pct">85%</span></div>
+        <div class="topic-row"><span class="topic-name">AI & Innovation</span><div class="topic-bar-bg"><div class="topic-bar" data-width="78"></div></div><span class="topic-pct">78%</span></div>
+        <div class="topic-row"><span class="topic-name">Guidance</span><div class="topic-bar-bg"><div class="topic-bar" data-width="65"></div></div><span class="topic-pct">65%</span></div>
+        <div class="topic-row"><span class="topic-name">Macro Risks</span><div class="topic-bar-bg"><div class="topic-bar" data-width="38"></div></div><span class="topic-pct">38%</span></div>
+      </div>
+
+      <div class="demo-section">
+        <h4>Speaker Talk Time</h4>
+        <div class="donut-container">
+          <svg viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E2E8F0" stroke-width="3.8"/>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6C63FF" stroke-width="3.8" stroke-dasharray="43 57" stroke-dashoffset="0"/>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F59E0B" stroke-width="3.8" stroke-dasharray="28 72" stroke-dashoffset="-43"/>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#10B981" stroke-width="3.8" stroke-dasharray="29 71" stroke-dashoffset="-71"/>
+          </svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#6C63FF"></div>Salil Parekh (CEO)</div><span>43%</span></div>
+          <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#F59E0B"></div>Jayesh Sanghrajka (CFO)</div><span>28%</span></div>
+          <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#10B981"></div>Analysts Q&A</div><span>29%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+  <h2>How It Works</h2>
+  <p class="section-sub">From PDF to investment signal in under 30 seconds</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Search or Upload</h3>
+      <p>Search any NSE company to pull concall PDFs directly, or upload your own transcript PDF.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>AI Reads the Call</h3>
+      <p>Llama 3.3 70B reads the full transcript, extracting every key statement and number.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Signal Generated</h3>
+      <p>Sentiment score, management tone, risks, and BUY/SELL/HOLD signal generated instantly.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Trade with Confidence</h3>
+      <p>Use the signal for intraday decisions or export the full analysis report as PDF.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <h2>Everything You Need to Analyse Concalls Smarter</h2>
+  <div class="features-grid">
+    <div class="feature-card" onclick="showToast('🔎 NSE Direct Fetch — search 200+ companies')">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <h3>NSE Direct Fetch</h3>
+      <p>Search any NSE-listed company and pull concall PDFs directly. No manual download needed.</p>
+    </div>
+    <div class="feature-card" onclick="showToast('✨ AI Summaries — powered by Llama 3.3 70B')">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <h3>AI Summaries</h3>
+      <p>Concise summaries of key takeaways, management guidance, and highlights in seconds.</p>
+    </div>
+    <div class="feature-card" onclick="showToast('📊 Sentiment score from -10 to +10')">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <h3>Sentiment Analysis</h3>
+      <p>Understand management tone — confident, cautious, or defensive — with a scored analysis.</p>
+    </div>
+    <div class="feature-card" onclick="showToast('🚩 Red flags & key risks auto-detected')">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <h3>Key Topics & Risks</h3>
+      <p>Identify red flags, key discussion points, and emerging risks flagged by management.</p>
+    </div>
+    <div class="feature-card" onclick="window.open('http://localhost:8501','_blank')">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+      <h3>Intraday Signal</h3>
+      <p>Get BUY / SELL / HOLD signal from concall sentiment for same-day trading decisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-section" id="cta">
+  <h2>Ready to Analyse Your First Concall?</h2>
+  <p>Free. No sign-up required. Works on any Indian company listed on NSE.</p>
+  <a href="http://localhost:8501" class="btn-white" target="_blank">Start Analysing Now →</a>
+</section>
+
+<!-- TRUST -->
+<section class="trust">
+  <p>Built with open-source tools and public data for the Indian investor community</p>
+  <div class="trust-logos">
+    <span class="trust-logo">NSE Data</span>
+    <span class="trust-logo">Groq AI</span>
+    <span class="trust-logo">Llama 3.3 70B</span>
+    <span class="trust-logo">BSE Filings</span>
+    <span class="trust-logo">Open Source</span>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p style="margin-bottom:12px">
+    <a href="#top">Home</a>
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="http://localhost:8501" target="_blank">Launch App</a>
+    <a href="#" onclick="openModal('loginModal')">Log In</a>
+  </p>
+  <p>© 2025 ConcallAnalyser &nbsp;•&nbsp; Built for India's retail investor community</p>
+</footer>
+
+<script>
+  // Animate topic bars on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.topic-bar').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 600);
+  });
+
+  // Active nav on scroll
+  const sections = ['top','features','how-it-works','cta'];
+  window.addEventListener('scroll', () => {
+    let current = 'top';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 120) current = id;
+    });
+    document.querySelectorAll('.nav-links a').forEach(a => {
+      a.classList.toggle('active', a.dataset.section === current);
+    });
+  });
+
+  // Modal
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal('loginModal'); });
+
+  // Mobile menu
+  function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+  function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
+
+  // Toggle full summary
+  function toggleSummary() {
+    const el = document.getElementById('fullSummary');
+    const link = document.querySelector('.read-more');
+    el.classList.toggle('open');
+    link.textContent = el.classList.contains('open') ? 'Show Less ↑' : 'Read Full Summary ↓';
+  }
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
