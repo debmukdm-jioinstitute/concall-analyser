@@ -182,19 +182,31 @@ with st.sidebar:
 
 
 def _val(v, fallback="Not mentioned"):
-    if v is None or v == "" or v == []:
+    if v is None or v == "" or v == [] or v == "null" or v == "N/A" or v == "None":
         return fallback
-    return v
+    return str(v)
 
 
-def _tag(text: str, color: str = "gray") -> str:
-    return f'<span class="ca-tag {color}">{text}</span>'
+def _esc(text) -> str:
+    """Escape for HTML and remove curly braces that break f-strings."""
+    if not text or text in (None, "null", "N/A", "None", ""):
+        return ""
+    s = str(text)
+    s = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    s = s.replace('"', "&quot;").replace("{", "&#123;").replace("}", "&#125;")
+    return s
 
 
-def _fin_row(label: str, value: str, delta: str = "", delta_up: bool = True) -> str:
+def _tag(text, color: str = "gray") -> str:
+    return f'<span class="ca-tag {color}">{_esc(text)}</span>'
+
+
+def _fin_row(label: str, value, delta=None, delta_up: bool = True) -> str:
+    if not value or str(value) in ("null", "None", "N/A", "Not mentioned"):
+        return ""
     dc = "up" if delta_up else "dn"
-    dhtml = f'<span class="ca-fin-delta {dc}">{delta}</span>' if delta else ""
-    return f'<div class="ca-fin-row"><span class="ca-fin-label">{label}</span><span class="ca-fin-val">{value} {dhtml}</span></div>'
+    dhtml = f'<span class="ca-fin-delta {dc}">{_esc(delta)}</span>' if delta and str(delta) not in ("null","None","N/A","") else ""
+    return f'<div class="ca-fin-row"><span class="ca-fin-label">{_esc(label)}</span><span class="ca-fin-val">{_esc(value)} {dhtml}</span></div>'
 
 
 def render_analysis(result: dict):
@@ -203,119 +215,125 @@ def render_analysis(result: dict):
         st.code(result.get("raw", ""))
         return
 
-    hv    = result.get("headline_verdict", result)
-    mgmt  = result.get("management_assessment", {}) or {}
-    fin   = result.get("financials_reported", {}) or {}
-    guid  = result.get("guidance", {}) or {}
-    themes = result.get("key_themes", {}) or {}
-    segs  = result.get("segment_analysis", []) or []
-    qa    = result.get("analyst_qa_highlights", []) or []
-    comp  = result.get("competitive_landscape", {}) or {}
-    out   = result.get("outlook_summary", {}) or {}
-    inv   = result.get("investor_summary", {}) or {}
+    hv    = result.get("headline_verdict") or result
+    mgmt  = result.get("management_assessment") or {}
+    fin   = result.get("financials_reported") or {}
+    guid  = result.get("guidance") or {}
+    themes = result.get("key_themes") or {}
+    segs  = result.get("segment_analysis") or []
+    qa    = result.get("analyst_qa_highlights") or []
+    comp  = result.get("competitive_landscape") or {}
+    out   = result.get("outlook_summary") or {}
+    inv   = result.get("investor_summary") or {}
 
-    signal    = hv.get("intraday_signal", result.get("intraday_signal", "HOLD")) or "HOLD"
-    sentiment = hv.get("overall_sentiment", result.get("overall_sentiment", "NEUTRAL")) or "NEUTRAL"
-    score     = hv.get("sentiment_score", result.get("sentiment_score", 0)) or 0
-    confidence = hv.get("signal_confidence", "MEDIUM") or "MEDIUM"
-    verdict   = hv.get("one_line_verdict") or hv.get("signal_reasoning") or result.get("signal_reasoning", "")
-    rec       = inv.get("recommendation", signal) or signal
-    tone      = mgmt.get("tone", "N/A") or "N/A"
-    cred      = mgmt.get("credibility_score", "?")
+    # Robust field extraction — handles null, "null", None, missing
+    def _g(d, *keys, default=""):
+        for k in keys:
+            v = d.get(k) if isinstance(d, dict) else None
+            if v not in (None, "", "null", "None", "N/A", [], {}):
+                return v
+        return default
 
-    sig_cls = {"BUY":"buy","ACCUMULATE":"buy","SELL":"sell","REDUCE":"sell","AVOID":"sell","HOLD":"hold"}.get(signal,"hold")
-    rec_cls = {"BUY":"buy","ACCUMULATE":"accumulate","SELL":"sell","REDUCE":"reduce","AVOID":"sell","HOLD":"hold"}.get(rec,"hold")
+    signal     = _g(hv, "intraday_signal") or _g(result, "intraday_signal") or "HOLD"
+    sentiment  = _g(hv, "overall_sentiment") or _g(result, "overall_sentiment") or "NEUTRAL"
+    raw_score  = _g(hv, "sentiment_score") or _g(result, "sentiment_score") or 0
+    confidence = _g(hv, "signal_confidence") or "MEDIUM"
+    verdict    = _g(hv, "one_line_verdict") or _g(hv, "signal_reasoning") or _g(result, "signal_reasoning") or ""
+    rec        = _g(inv, "recommendation") or signal
+    tone       = _g(mgmt, "tone") or "N/A"
+    cred       = _g(mgmt, "credibility_score") or "?"
+
+    try:
+        score_f = float(raw_score)
+    except (TypeError, ValueError):
+        score_f = 0.0
+
+    sig_cls = {"BUY":"buy","ACCUMULATE":"buy","SELL":"sell","REDUCE":"sell","AVOID":"sell","HOLD":"hold"}.get(str(signal).upper(),"hold")
+    rec_cls = {"BUY":"buy","ACCUMULATE":"accumulate","SELL":"sell","REDUCE":"reduce","AVOID":"sell","HOLD":"hold"}.get(str(rec).upper(),"hold")
 
     # ── VERDICT BANNER ────────────────────────────────────────────────────────
-    st.markdown(f"""
-<div class="ca-verdict {sig_cls}">
-  <div class="ca-verdict-tag {sig_cls}">{sentiment} &nbsp;·&nbsp; {signal} &nbsp;·&nbsp; Confidence: {confidence}</div>
-  <div class="ca-verdict-text">{verdict}</div>
-</div>""", unsafe_allow_html=True)
+    v_tag = _esc(f"{sentiment} · {signal} · Confidence: {confidence}")
+    v_txt = _esc(verdict)
+    st.markdown(
+        f'<div class="ca-verdict {sig_cls}">'
+        f'<div class="ca-verdict-tag {sig_cls}">{v_tag}</div>'
+        f'<div class="ca-verdict-text">{v_txt}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
-    # ── 5 METRIC CARDS ────────────────────────────────────────────────────────
-    try: score_f = float(score)
-    except: score_f = 0
+    # ── 5 METRIC CARDS (use Streamlit native — safe from f-string injection) ──
     score_color = "#059669" if score_f >= 3 else "#DC2626" if score_f <= -2 else "#D97706"
-    sent_sub = {"BULLISH":"up","BEARISH":"dn","NEUTRAL":"neu"}.get(sentiment,"neu")
+    sent_sub = {"BULLISH":"up","BEARISH":"dn","NEUTRAL":"neu"}.get(str(sentiment).upper(),"neu")
+    score_sign = f"+{score_f:.1f}" if score_f > 0 else f"{score_f:.1f}"
 
-    st.markdown(f"""
-<div class="ca-metric-grid">
-  <div class="ca-metric">
-    <div class="ca-metric-label">Signal</div>
-    <div class="ca-metric-value" style="color:{score_color}">{signal}</div>
-    <div class="ca-metric-sub {sent_sub}">{sentiment}</div>
-  </div>
-  <div class="ca-metric">
-    <div class="ca-metric-label">Sentiment Score</div>
-    <div class="ca-metric-value" style="color:{score_color}">{score_f:+.1f}</div>
-    <div class="ca-metric-sub neu">out of ±10</div>
-  </div>
-  <div class="ca-metric">
-    <div class="ca-metric-label">Mgmt Tone</div>
-    <div class="ca-metric-value" style="font-size:15px">{tone}</div>
-    <div class="ca-metric-sub neu">Credibility: {cred}/10</div>
-  </div>
-  <div class="ca-metric">
-    <div class="ca-metric-label">Revenue</div>
-    <div class="ca-metric-value" style="font-size:15px">{_val(fin.get("revenue"),"—")}</div>
-    <div class="ca-metric-sub up">{_val(fin.get("revenue_growth_yoy"),"")}</div>
-  </div>
-  <div class="ca-metric">
-    <div class="ca-metric-label">EBITDA Margin</div>
-    <div class="ca-metric-value" style="font-size:15px">{_val(fin.get("ebitda_margin"),"—")}</div>
-    <div class="ca-metric-sub up">{_val(fin.get("ebitda_margin_change"),"")}</div>
-  </div>
-</div>""", unsafe_allow_html=True)
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("Signal", signal, delta=sentiment)
+    m2.metric("Sentiment Score", score_sign, delta="out of ±10")
+    m3.metric("Mgmt Tone", tone or "N/A")
+    m4.metric("Revenue", _val(_g(fin,"revenue"), "—"), delta=_val(_g(fin,"revenue_growth_yoy"),""))
+    m5.metric("EBITDA Margin", _val(_g(fin,"ebitda_margin"), "—"), delta=_val(_g(fin,"ebitda_margin_change"),""))
 
     # ── ROW 1: POSITIVES + FINANCIALS ─────────────────────────────────────────
     col_a, col_b = st.columns([1, 1])
 
     with col_a:
-        positives = themes.get("positives", result.get("key_positives", []))
-        pos_tags = "".join(_tag(p[:60], "green") for p in positives[:5])
-        tailwinds = themes.get("tailwinds", [])
-        tw_tags = "".join(_tag(t[:50], "blue") for t in tailwinds[:3])
+        positives = (themes.get("positives") or result.get("key_positives") or [])
+        positives = [p for p in positives if p and str(p) not in ("null","None","")]
+        tailwinds = [t for t in (themes.get("tailwinds") or []) if t and str(t) not in ("null","None","")]
+        risks     = (themes.get("risks") or result.get("key_risks") or [])
+        risks     = [r for r in risks if r and str(r) not in ("null","None","")]
+        headwinds = [h for h in (themes.get("headwinds") or []) if h and str(h) not in ("null","None","")]
+        red_flags = (themes.get("red_flags") or result.get("red_flags") or [])
+        red_flags = [f for f in red_flags if f and str(f) not in ("null","None","")]
 
-        risks = themes.get("risks", result.get("key_risks", []))
-        risk_tags = "".join(_tag(r[:60], "red") for r in risks[:4])
-        headwinds = themes.get("headwinds", [])
-        hw_tags = "".join(_tag(h[:50], "yellow") for h in headwinds[:3])
+        pos_tags  = "".join(_tag(str(p)[:70], "green") for p in positives[:5])
+        tw_tags   = "".join(_tag(str(t)[:60], "blue")  for t in tailwinds[:3])
+        risk_tags = "".join(_tag(str(r)[:70], "red")   for r in risks[:4])
+        hw_tags   = "".join(_tag(str(h)[:60], "yellow")for h in headwinds[:3])
+        rf_html   = ('<div class="ca-section-head" style="margin-top:10px">🚩 Red Flags</div>'
+                     + "".join(_tag(str(f)[:70],"red") for f in red_flags[:3])) if red_flags else ""
 
-        red_flags = themes.get("red_flags", result.get("red_flags", []))
-        rf_html = ""
-        if red_flags:
-            rf_tags = "".join(_tag(f[:60], "red") for f in red_flags[:3])
-            rf_html = f'<div class="ca-section-head">🚩 Red Flags</div>{rf_tags}'
+        tw_head = "& Tailwinds" if tailwinds else ""
+        hw_head = "& Headwinds" if headwinds else ""
+        no_pos  = "<p style='color:#9CA3AF;font-size:13px;margin:4px 0'>Not mentioned in transcript</p>"
+        no_risk = "<p style='color:#9CA3AF;font-size:13px;margin:4px 0'>Not mentioned in transcript</p>"
 
-        st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">✅ Key Positives {("& Tailwinds" if tailwinds else "")}</div>
-  {pos_tags}{tw_tags}
-  <div class="ca-section-head" style="margin-top:14px">⚠️ Risks {("& Headwinds" if headwinds else "")}</div>
-  {risk_tags}{hw_tags}
-  {rf_html}
-</div>""", unsafe_allow_html=True)
+        html = (
+            '<div class="ca-card">'
+            f'<div class="ca-section-head">&#x2705; Key Positives {tw_head}</div>'
+            + (pos_tags + tw_tags if (pos_tags or tw_tags) else no_pos)
+            + f'<div class="ca-section-head" style="margin-top:14px">&#x26A0;&#xFE0F; Risks {hw_head}</div>'
+            + (risk_tags + hw_tags if (risk_tags or hw_tags) else no_risk)
+            + rf_html
+            + '</div>'
+        )
+        st.markdown(html, unsafe_allow_html=True)
 
     with col_b:
         rows = ""
+        cash = _g(fin, "cash_and_equivalents")
+        ob   = _g(fin, "order_book")
+        tcv  = _g(fin, "deal_wins_tcv")
         pairs = [
-            ("Revenue", fin.get("revenue"), fin.get("revenue_growth_yoy")),
-            ("EBITDA",  fin.get("ebitda"),  fin.get("ebitda_margin")),
-            ("PAT",     fin.get("pat"),      fin.get("pat_growth_yoy")),
-            ("Debt",    fin.get("debt_level"), fin.get("cash_and_equivalents") and f"Cash: {fin.get('cash_and_equivalents')}"),
-            ("Capex",   fin.get("capex"),    fin.get("order_book") and f"OB: {fin.get('order_book')}"),
+            ("Revenue",      _g(fin,"revenue"),      _g(fin,"revenue_growth_yoy")),
+            ("EBITDA",       _g(fin,"ebitda"),       _g(fin,"ebitda_margin")),
+            ("PAT",          _g(fin,"pat"),           _g(fin,"pat_growth_yoy")),
+            ("Debt",         _g(fin,"debt_level"),   f"Cash: {cash}" if cash else ""),
+            ("Capex",        _g(fin,"capex"),        f"OB: {ob}" if ob else ""),
+            ("Deal TCV",     tcv,                    ""),
         ]
         for label, val, delta in pairs:
-            if val:
-                is_up = delta and any(c in str(delta) for c in ["+", "↑", "up", "Up"])
-                rows += _fin_row(label, str(val), str(delta) if delta else "", is_up)
+            rows += _fin_row(label, val, delta)
 
-        st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">💰 Financials Reported</div>
-  {rows if rows else "<p style='color:#9CA3AF;font-size:13px'>No financial data extracted</p>"}
-</div>""", unsafe_allow_html=True)
+        no_fin = "<p style='color:#9CA3AF;font-size:13px'>Financial data not found in transcript</p>"
+        st.markdown(
+            '<div class="ca-card">'
+            '<div class="ca-section-head">&#x1F4B0; Financials Reported</div>'
+            + (rows if rows else no_fin)
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
     # ── ROW 2: GUIDANCE + MANAGEMENT ──────────────────────────────────────────
     col_c, col_d = st.columns([1, 1])
@@ -323,133 +341,153 @@ def render_analysis(result: dict):
     with col_c:
         changed_html = ""
         if guid.get("guidance_changed"):
-            changed_html = f'<div class="ca-tag yellow" style="margin-bottom:8px">⚠️ Guidance revised</div><p style="font-size:12px;color:#374151">{_val(guid.get("guidance_change_detail"))}</p>'
+            detail = _esc(_g(guid, "guidance_change_detail"))
+            changed_html = f'<div class="ca-tag yellow" style="margin-bottom:8px">&#x26A0;&#xFE0F; Guidance revised</div><p style="font-size:12px;color:#374151">{detail}</p>'
         g_rows = ""
         g_pairs = [
-            ("Revenue", guid.get("revenue_guidance")),
-            ("Margin",  guid.get("margin_guidance")),
-            ("Growth",  guid.get("growth_guidance")),
-            ("Capex",   guid.get("capex_guidance")),
-            ("Hiring",  guid.get("hiring_guidance")),
-            ("Dividend",guid.get("dividend_guidance")),
+            ("Revenue",  _g(guid,"revenue_guidance")),
+            ("Margin",   _g(guid,"margin_guidance")),
+            ("Growth",   _g(guid,"growth_guidance")),
+            ("Capex",    _g(guid,"capex_guidance")),
+            ("Hiring",   _g(guid,"hiring_guidance")),
+            ("Dividend", _g(guid,"dividend_guidance")),
         ]
         for label, val in g_pairs:
             if val:
-                g_rows += f'<div class="ca-fin-row"><span class="ca-fin-label">{label}</span><span class="ca-fin-val">{val}</span></div>'
+                g_rows += f'<div class="ca-fin-row"><span class="ca-fin-label">{_esc(label)}</span><span class="ca-fin-val">{_esc(val)}</span></div>'
 
-        st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">🔭 Management Guidance</div>
-  {changed_html}
-  {g_rows if g_rows else "<p style='color:#9CA3AF;font-size:13px'>No guidance mentioned</p>"}
-</div>""", unsafe_allow_html=True)
+        no_guid = "<p style='color:#9CA3AF;font-size:13px'>No explicit guidance given</p>"
+        st.markdown(
+            '<div class="ca-card">'
+            '<div class="ca-section-head">&#x1F52D; Management Guidance</div>'
+            + changed_html
+            + (g_rows if g_rows else no_guid)
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
     with col_d:
-        speakers = "".join(f'<div class="ca-tag gray">{s}</div>' for s in mgmt.get("key_speakers", [])[:4])
+        speakers   = "".join(f'<div class="ca-tag gray">{_esc(s)}</div>' for s in (mgmt.get("key_speakers") or [])[:4] if s)
         stmts_html = "".join(
             f'<div style="font-size:12px;font-style:italic;color:#374151;padding:5px 0;border-bottom:1px solid #F3F4F6">'
-            f'&ldquo;{s[:120]}&rdquo;</div>'
-            for s in mgmt.get("strong_statements", [])[:3]
+            f'&ldquo;{_esc(str(s)[:120])}&rdquo;</div>'
+            for s in (mgmt.get("strong_statements") or [])[:3] if s
         )
-        evasive = "".join(f'<div class="ca-tag yellow">{q[:70]}</div>' for q in mgmt.get("evasive_questions", [])[:3])
+        evasive = "".join(f'<div class="ca-tag yellow">{_esc(str(q)[:70])}</div>' for q in (mgmt.get("evasive_questions") or [])[:3] if q)
+        tone_r  = _esc(_g(mgmt,"tone_reasoning"))
 
-        st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">🎙️ Management Assessment</div>
-  <div style="font-size:13px;margin-bottom:8px">
-    <strong>Tone:</strong> {tone} &nbsp;&nbsp; <strong>Credibility:</strong> {cred}/10
-  </div>
-  <p style="font-size:12px;color:#6B7280;margin-bottom:8px">{_val(mgmt.get("tone_reasoning"))}</p>
-  {('<div style="margin-bottom:6px">' + speakers + '</div>') if speakers else ""}
-  {stmts_html}
-  {('<div class="ca-section-head" style="margin-top:8px">Questions dodged</div>' + evasive) if evasive else ""}
-</div>""", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="ca-card">'
+            '<div class="ca-section-head">&#x1F399; Management Assessment</div>'
+            f'<div style="font-size:13px;margin-bottom:8px"><strong>Tone:</strong> {_esc(tone)} &nbsp;&nbsp; <strong>Credibility:</strong> {_esc(str(cred))}/10</div>'
+            + (f'<p style="font-size:12px;color:#6B7280;margin-bottom:8px">{tone_r}</p>' if tone_r else "")
+            + (f'<div style="margin-bottom:6px">{speakers}</div>' if speakers else "")
+            + stmts_html
+            + (f'<div class="ca-section-head" style="margin-top:8px">Questions dodged</div>{evasive}' if evasive else "")
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
     # ── ANALYST Q&A ───────────────────────────────────────────────────────────
-    if qa:
-        qa_html = ""
+    if qa and isinstance(qa, list):
         badge_map = {"Clear":"clear","Strong":"strong","Vague":"vague","Deflected":"deflect"}
-        dot_color = {"Clear":"#10B981","Strong":"#6C63FF","Vague":"#F59E0B","Deflected":"#EF4444"}
+        dot_map   = {"Clear":"#10B981","Strong":"#6C63FF","Vague":"#F59E0B","Deflected":"#EF4444"}
+        qa_html   = ""
         for item in qa[:6]:
-            quality = item.get("management_answer_quality","")
-            firm = item.get("analyst_firm","Analyst") or "Analyst"
-            topic = item.get("question_topic","") or ""
-            tkaway = item.get("key_takeaway","") or ""
-            bc = badge_map.get(quality,"vague")
-            dc = dot_color.get(quality,"#9CA3AF")
-            qa_html += f"""
-<div class="ca-qa-item">
-  <div class="ca-qa-dot" style="background:{dc}"></div>
-  <div style="flex:1">
-    <div class="ca-qa-q">{firm} — {topic[:70]}</div>
-    <div class="ca-qa-a">{tkaway[:150]}</div>
-  </div>
-  <span class="ca-badge {bc}">{quality}</span>
-</div>"""
-        st.markdown(f'<div class="ca-card"><div class="ca-section-head">❓ Analyst Q&A Highlights</div>{qa_html}</div>', unsafe_allow_html=True)
+            if not isinstance(item, dict):
+                continue
+            quality = str(item.get("management_answer_quality") or "Vague")
+            firm    = _esc(str(item.get("analyst_firm") or "Analyst")[:40])
+            topic   = _esc(str(item.get("question_topic") or "")[:80])
+            tkaway  = _esc(str(item.get("key_takeaway") or "")[:200])
+            bc = badge_map.get(quality, "vague")
+            dc = dot_map.get(quality, "#9CA3AF")
+            qa_html += (
+                '<div class="ca-qa-item">'
+                f'<div class="ca-qa-dot" style="background:{dc}"></div>'
+                '<div style="flex:1">'
+                f'<div class="ca-qa-q">{firm} &#x2014; {topic}</div>'
+                f'<div class="ca-qa-a">{tkaway}</div>'
+                '</div>'
+                f'<span class="ca-badge {bc}">{_esc(quality)}</span>'
+                '</div>'
+            )
+        if qa_html:
+            st.markdown(
+                '<div class="ca-card">'
+                '<div class="ca-section-head">&#x2753; Analyst Q&amp;A Highlights</div>'
+                + qa_html + '</div>',
+                unsafe_allow_html=True
+            )
 
-    # ── SEGMENTS (expanders, less visual weight) ───────────────────────────────
-    if segs:
+    # ── SEGMENTS ──────────────────────────────────────────────────────────────
+    if segs and isinstance(segs, list):
         with st.expander(f"📦 Segment Analysis — {len(segs)} segments"):
             for seg in segs:
+                if not isinstance(seg, dict):
+                    continue
                 sc1, sc2 = st.columns([1, 2])
-                sc1.metric(seg.get("segment_name","Segment"), _val(seg.get("revenue")))
+                sc1.metric(_val(seg.get("segment_name"), "Segment"), _val(seg.get("revenue")))
                 sc2.write(_val(seg.get("outlook")))
 
     # ── OUTLOOK ───────────────────────────────────────────────────────────────
-    mon_tags = "".join(_tag(m[:60],"blue") for m in out.get("key_monitorables",[])[:4])
-    cat_tags = "".join(_tag(c[:60],"green") for c in out.get("catalysts",[])[:3])
-    rsk_tags = "".join(_tag(r[:60],"red") for r in out.get("risks_to_watch",[])[:3])
-    short_t = _val(out.get("short_term_1q"))
-    long_t  = _val(out.get("medium_term_1y"))
+    mon_items = [m for m in (out.get("key_monitorables") or []) if m and str(m) not in ("null","None","")]
+    cat_items = [c for c in (out.get("catalysts") or []) if c and str(c) not in ("null","None","")]
+    rsk_items = [r for r in (out.get("risks_to_watch") or []) if r and str(r) not in ("null","None","")]
+    mon_tags  = "".join(_tag(str(m)[:70],"blue")  for m in mon_items[:4])
+    cat_tags  = "".join(_tag(str(c)[:70],"green") for c in cat_items[:3])
+    rsk_tags  = "".join(_tag(str(r)[:70],"red")   for r in rsk_items[:3])
+    short_t   = _esc(_val(_g(out,"short_term_1q"), "Not mentioned"))
+    long_t    = _esc(_val(_g(out,"medium_term_1y"), "Not mentioned"))
+    none_span = '<span style="font-size:12px;color:#9CA3AF">None mentioned</span>'
 
-    st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">🔮 Outlook & Monitorables</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <div>
-      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Next Quarter</div>
-      <p style="font-size:13px;color:#374151;margin-bottom:10px">{short_t}</p>
-      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">1-Year View</div>
-      <p style="font-size:13px;color:#374151">{long_t}</p>
-    </div>
-    <div>
-      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Watch List</div>
-      {mon_tags}
-      <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">Catalysts</div>
-      {cat_tags if cat_tags else '<span style="font-size:12px;color:#9CA3AF">None mentioned</span>'}
-      <div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">Downside Risks</div>
-      {rsk_tags if rsk_tags else '<span style="font-size:12px;color:#9CA3AF">None mentioned</span>'}
-    </div>
-  </div>
-</div>""", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="ca-card">'
+        '<div class="ca-section-head">&#x1F52E; Outlook &amp; Monitorables</div>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+        '<div>'
+        '<div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Next Quarter</div>'
+        f'<p style="font-size:13px;color:#374151;margin-bottom:12px">{short_t}</p>'
+        '<div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">1-Year View</div>'
+        f'<p style="font-size:13px;color:#374151">{long_t}</p>'
+        '</div>'
+        '<div>'
+        '<div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Watch List</div>'
+        + (mon_tags if mon_tags else none_span)
+        + '<div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 5px">Catalysts</div>'
+        + (cat_tags if cat_tags else none_span)
+        + '<div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 5px">Downside Risks</div>'
+        + (rsk_tags if rsk_tags else none_span)
+        + '</div></div></div>',
+        unsafe_allow_html=True
+    )
 
-    # ── INVESTOR SUMMARY + RECOMMENDATION ─────────────────────────────────────
-    retail_txt  = _val(inv.get("for_retail_investor", result.get("analyst_summary","")))
-    bull_txt    = _val(inv.get("buy_case"))
-    bear_txt    = _val(inv.get("sell_case"))
-    tp_txt      = inv.get("target_price_mentioned","")
+    # ── INVESTOR SUMMARY ──────────────────────────────────────────────────────
+    retail_txt = _esc(_val(_g(inv,"for_retail_investor") or _g(result,"analyst_summary"), "Not provided"))
+    bull_txt   = _esc(_val(_g(inv,"buy_case"), "Not provided"))
+    bear_txt   = _esc(_val(_g(inv,"sell_case"), "Not provided"))
+    tp_txt     = _esc(str(_g(inv,"target_price_mentioned") or ""))
 
-    st.markdown(f"""
-<div class="ca-card">
-  <div class="ca-section-head">📝 Investor Summary</div>
-  <p style="font-size:13px;color:#374151;margin-bottom:14px">{retail_txt}</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-    <div style="background:#F0FDF4;border-radius:8px;padding:12px">
-      <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bull Case</div>
-      <p style="font-size:12px;color:#15803D;margin:0">{bull_txt}</p>
-    </div>
-    <div style="background:#FEF2F2;border-radius:8px;padding:12px">
-      <div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bear Case</div>
-      <p style="font-size:12px;color:#B91C1C;margin:0">{bear_txt}</p>
-    </div>
-  </div>
-  {f'<p style="font-size:12px;color:#6B7280;margin-bottom:10px">Analyst target prices: {tp_txt}</p>' if tp_txt else ""}
-  <div>
-    <span style="font-size:12px;color:#6B7280;margin-right:8px">Final Recommendation</span>
-    <span class="ca-rec {rec_cls}">{rec}</span>
-  </div>
-</div>""", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="ca-card">'
+        '<div class="ca-section-head">&#x1F4DD; Investor Summary</div>'
+        f'<p style="font-size:13px;color:#374151;margin-bottom:14px">{retail_txt}</p>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+        '<div style="background:#F0FDF4;border-radius:8px;padding:12px">'
+        '<div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bull Case</div>'
+        f'<p style="font-size:12px;color:#15803D;margin:0">{bull_txt}</p>'
+        '</div>'
+        '<div style="background:#FEF2F2;border-radius:8px;padding:12px">'
+        '<div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bear Case</div>'
+        f'<p style="font-size:12px;color:#B91C1C;margin:0">{bear_txt}</p>'
+        '</div>'
+        '</div>'
+        + (f'<p style="font-size:12px;color:#6B7280;margin-bottom:10px">Analyst target prices: {tp_txt}</p>' if tp_txt else "")
+        + '<div><span style="font-size:12px;color:#6B7280;margin-right:8px">Final Recommendation</span>'
+        + f'<span class="ca-rec {rec_cls}">{_esc(rec)}</span></div>'
+        + '</div>',
+        unsafe_allow_html=True
+    )
 
     with st.expander("🔧 View Raw Analysis JSON"):
         st.json(result)
