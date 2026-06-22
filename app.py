@@ -633,197 +633,205 @@ with tab2:
     st.divider()
 
     if corp_section == "📢 Announcement Scorer":
-        st.subheader("📢 AGM & Corporate Announcement Analyser")
-        st.caption("Fetch all NSE announcements for any company — scored BULLISH / BEARISH / NEUTRAL automatically")
+        load_all_companies()
+        ann_selected = st_searchbox(
+            search_nse,
+            placeholder="Search company — e.g. Infosys, HDFC Bank, TCS...",
+            key="ann_searchbox",
+            label="Search NSE Company",
+            clear_on_submit=False,
+        )
 
-    load_all_companies()
+        if ann_selected:
+            sym_part = ann_selected.strip().rsplit("(", 1)
+            ann_symbol = sym_part[-1].replace(")", "").strip() if len(sym_part) > 1 else ann_selected.strip()
+            ann_company = sym_part[0].strip() if len(sym_part) > 1 else ann_selected.strip()
 
-    ann_selected = st_searchbox(
-        search_nse,
-        placeholder="Search company — e.g. Infosys, HDFC Bank, TCS...",
-        key="ann_searchbox",
-        label="Search NSE Company",
-        clear_on_submit=False,
-    )
+            sel_col, cnt_col = st.columns([3, 1])
+            with sel_col:
+                st.markdown(
+                    f'<div class="ca-verdict hold" style="padding:8px 14px;margin:8px 0">'
+                    f'<span style="font-size:12px;font-weight:600;color:#374151">'
+                    f'Selected: <strong>{_esc(ann_company)}</strong> &nbsp;·&nbsp; <code>{_esc(ann_symbol)}</code></span></div>',
+                    unsafe_allow_html=True
+                )
+            with cnt_col:
+                max_ann = st.selectbox("Fetch count", [20, 50, 100], index=1, key="ann_count")
 
-    if ann_selected:
-        sym_part = ann_selected.strip().rsplit("(", 1)
-        ann_symbol = sym_part[-1].replace(")", "").strip() if len(sym_part) > 1 else ann_selected.strip()
-        ann_company = sym_part[0].strip() if len(sym_part) > 1 else ann_selected.strip()
+            if st.button("📥 Fetch & Score Announcements", type="primary", use_container_width=True):
+                with st.spinner(f"Fetching announcements for {ann_symbol}..."):
+                    parsed = parse_announcements(ann_symbol, max_ann)
+                    summary = summarize_announcements(parsed)
+                    st.session_state["ann_parsed"] = parsed
+                    st.session_state["ann_summary"] = summary
+                    st.session_state["ann_company"] = ann_company
 
-        col_l, col_r = st.columns([2, 1])
-        with col_l:
-            st.info(f"Selected: **{ann_company}** | `{ann_symbol}`")
-        with col_r:
-            max_ann = st.selectbox("Announcements to fetch", [20, 50, 100], index=1, key="ann_count")
+        if "ann_parsed" in st.session_state:
+            parsed  = st.session_state["ann_parsed"]
+            summary = st.session_state["ann_summary"]
+            company_label = st.session_state.get("ann_company", "")
 
-        if st.button("📥 Fetch & Score Announcements", type="primary", use_container_width=True):
-            with st.spinner(f"Fetching announcements for {ann_symbol}..."):
-                parsed = parse_announcements(ann_symbol, max_ann)
-                summary = summarize_announcements(parsed)
-                st.session_state["ann_parsed"] = parsed
-                st.session_state["ann_summary"] = summary
-                st.session_state["ann_company"] = ann_company
+            if not parsed:
+                st.warning("No announcements found.")
+            else:
+                overall   = summary.get("overall_signal", "NEUTRAL")
+                composite = summary.get("composite_score", 0)
+                momentum  = summary.get("momentum", "→ Stable")
+                bull_cnt  = summary.get("bullish_count", 0)
+                bear_cnt  = summary.get("bearish_count", 0)
+                bull_30d  = summary.get("recent_bullish_30d", 0)
+                bear_30d  = summary.get("recent_bearish_30d", 0)
+                total     = summary.get("total", 0)
 
-    if "ann_parsed" in st.session_state:
-        parsed = st.session_state["ann_parsed"]
-        summary = st.session_state["ann_summary"]
-        company_label = st.session_state.get("ann_company", "")
+                sig_cls = "buy" if "BULLISH" in overall else "sell" if "BEARISH" in overall else "hold"
+                comp_sign = f"+{composite:.2f}" if composite > 0 else f"{composite:.2f}"
 
-        if not parsed:
-            st.warning("No announcements found.")
-        else:
-            # ── SUMMARY METRICS ────────────────────────────────────────────────
-            st.divider()
-            overall = summary.get("overall_signal", "NEUTRAL")
-            overall_emoji = summary.get("overall_emoji", "🟡")
-            momentum = summary.get("momentum", "→ Stable")
-            composite = summary.get("composite_score", 0)
+                # ── VERDICT + METRICS ─────────────────────────────────────────
+                st.markdown(
+                    f'<div class="ca-verdict {sig_cls}">'
+                    f'<div class="ca-verdict-tag {sig_cls}">{_esc(overall)} · Weighted Composite Score</div>'
+                    f'<div class="ca-verdict-text">{_esc(company_label)} — {total} announcements analysed · '
+                    f'Momentum: {_esc(momentum)}</div></div>',
+                    unsafe_allow_html=True
+                )
 
-            c1, c2, c3, c4, c5, c6 = st.columns(6)
-            c1.metric("Overall Signal", f"{overall_emoji} {overall}")
-            c2.metric("Composite Score", f"{composite:+.2f}")
-            c3.metric("Momentum (30d)", momentum)
-            c4.metric("🟢 Bullish", f"{summary.get('bullish_count',0)} ({summary.get('recent_bullish_30d',0)} recent)")
-            c5.metric("🔴 Bearish", f"{summary.get('bearish_count',0)} ({summary.get('recent_bearish_30d',0)} recent)")
-            c6.metric("Scanned", summary.get("total", 0))
+                m1, m2, m3, m4, m5, m6 = st.columns(6)
+                m1.metric("Signal", overall)
+                m2.metric("Composite", comp_sign)
+                m3.metric("Momentum", momentum)
+                m4.metric("Bullish", f"{bull_cnt} ({bull_30d} recent)")
+                m5.metric("Bearish", f"{bear_cnt} ({bear_30d} recent)")
+                m6.metric("Scanned", total)
 
-            with st.expander("ℹ️ How this score is calculated"):
-                st.markdown("""
-**Algorithm: 3-Layer Weighted Average**
+                # ── GAUGE + CATEGORIES ────────────────────────────────────────
+                g_col, c_col = st.columns([1, 1])
+                with g_col:
+                    avg = summary.get("avg_score", 0)
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number", value=avg,
+                        number={"suffix": "/10"},
+                        domain={"x": [0, 1], "y": [0, 1]},
+                        title={"text": "Announcement Sentiment"},
+                        gauge={"axis": {"range": [-10, 10]}, "bar": {"color": "#6C63FF"},
+                               "steps": [{"range": [-10,-3],"color":"#fee2e2"},
+                                         {"range": [-3,3],"color":"#fef9c3"},
+                                         {"range": [3,10],"color":"#dcfce7"}]}
+                    ))
+                    fig.update_layout(height=200, margin=dict(t=30, b=10))
+                    st.markdown('<div class="ca-card" style="padding:8px">', unsafe_allow_html=True)
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
+                with c_col:
+                    cat_data = summary.get("top_categories", [])
+                    if cat_data:
+                        cats, counts = zip(*cat_data)
+                        fig2 = go.Figure(go.Bar(x=list(counts), y=list(cats), orientation="h",
+                                                marker_color="#6C63FF"))
+                        fig2.update_layout(height=200, margin=dict(t=10,b=10,l=10,r=10),
+                                           xaxis_title="Count", yaxis={"autorange":"reversed"})
+                        st.markdown('<div class="ca-card" style="padding:8px">', unsafe_allow_html=True)
+                        st.plotly_chart(fig2, use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                # ── BULLISH / BEARISH HIGHLIGHTS ──────────────────────────────
+                def _ann_card(a: dict) -> str:
+                    sig = a.get("signal","NEUTRAL")
+                    tag_cls = {"BULLISH":"green","BEARISH":"red","NEUTRAL":"gray"}.get(sig,"gray")
+                    rules = " &nbsp;·&nbsp; ".join(_esc(r) for r in a.get("matched_rules",[])[:3])
+                    pdf_link = (f'<a href="{_esc(a["pdf_url"])}" target="_blank" '
+                                f'style="font-size:12px;color:#6C63FF;font-weight:600">📄 Open Filing ↗</a>'
+                                if a.get("pdf_url") else "")
+                    return (
+                        f'<div class="ca-card" style="margin-bottom:10px">'
+                        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+                        f'<span class="ca-tag {tag_cls}" style="font-size:10px">{_esc(sig)}</span>'
+                        f'<span style="font-size:11px;font-weight:600;color:#374151">{_esc(a.get("date",""))}</span>'
+                        f'<span style="font-size:11px;color:#6B7280">— {_esc(a.get("category",""))}</span>'
+                        f'<span style="margin-left:auto;font-size:11px;font-weight:700;color:#6C63FF">{a.get("score",0):+.1f}</span>'
+                        f'</div>'
+                        f'<p style="font-size:12px;color:#374151;margin:0 0 6px">{_esc((a.get("text") or "")[:200])}</p>'
+                        + (f'<p style="font-size:11px;color:#6B7280;margin:0 0 6px">Triggers: {rules}</p>' if rules else "")
+                        + (f'<div>{pdf_link}</div>' if pdf_link else "")
+                        + '</div>'
+                    )
+
+                col_bull, col_bear = st.columns(2)
+                with col_bull:
+                    st.markdown('<div class="ca-section-head">&#x1F7E2; Recent Bullish Events</div>', unsafe_allow_html=True)
+                    for a in summary.get("recent_bullish", []):
+                        st.markdown(_ann_card(a), unsafe_allow_html=True)
+
+                with col_bear:
+                    st.markdown('<div class="ca-section-head">&#x1F534; Recent Bearish Events</div>', unsafe_allow_html=True)
+                    bearish_list = [a for a in parsed if a["signal"] == "BEARISH"]
+                    if bearish_list:
+                        for a in bearish_list[:3]:
+                            st.markdown(_ann_card(a), unsafe_allow_html=True)
+                    else:
+                        st.markdown('<div class="ca-tag green">No bearish events detected</div>', unsafe_allow_html=True)
+
+                # ── ALGORITHM INFO ────────────────────────────────────────────
+                with st.expander("ℹ️ How the weighted score is calculated"):
+                    st.markdown("""
+**3-Layer Weighted Average**
 ```
-Composite = Σ(raw_score × category_weight × recency_weight)
-            ─────────────────────────────────────────────────
-               Σ(category_weight × recency_weight)
+Score = Σ(raw × category_weight × recency_weight) / Σ(category_weight × recency_weight)
 ```
+| Layer | Range |
+|-------|-------|
+| Raw Score (keyword match) | -10 to +10 |
+| Category Weight (Dividend=3×, AGM=0.3×) | 0.3× – 3.0× |
+| Recency Decay (today=1.0×, 45d=0.5×) | 0.1× – 1.0× |
+""")
 
-| Layer | What it measures | Range |
-|-------|-----------------|-------|
-| **Raw Score** | Keyword match on announcement text | -10 to +10 |
-| **Category Weight** | Dividend/Acquisition = 3×, Routine filings = 0.3× | 0.3× – 3.0× |
-| **Recency Decay** | Today = 1.0×, 45 days ago = 0.5×, 90 days = 0.25× | 0.1× – 1.0× |
-
-A buyback from last week scores far higher than an AGM notice from 3 months ago.
-                """)
-
-            # ── GAUGE ──────────────────────────────────────────────────────────
-            avg = summary.get("avg_score", 0)
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=avg,
-                number={"suffix": "/10", "font": {"size": 28}},
-                domain={"x": [0, 1], "y": [0, 1]},
-                title={"text": f"Announcement Sentiment — {company_label}"},
-                gauge={
-                    "axis": {"range": [-10, 10]},
-                    "bar": {"color": "#6C63FF"},
-                    "steps": [
-                        {"range": [-10, -3], "color": "#fee2e2"},
-                        {"range": [-3, 3], "color": "#fef9c3"},
-                        {"range": [3, 10], "color": "#dcfce7"},
-                    ],
-                }
-            ))
-            fig.update_layout(height=220, margin=dict(t=40, b=10))
-            st.plotly_chart(fig, use_container_width=True)
-
-            # ── CATEGORY BREAKDOWN ─────────────────────────────────────────────
-            st.subheader("📊 Announcement Categories")
-            cat_data = summary.get("top_categories", [])
-            if cat_data:
-                cats, counts = zip(*cat_data)
-                fig2 = go.Figure(go.Bar(
-                    x=list(counts), y=list(cats),
-                    orientation="h",
-                    marker_color="#6C63FF",
-                ))
-                fig2.update_layout(height=220, margin=dict(t=10, b=10, l=10, r=10),
-                                   xaxis_title="Count", yaxis={"autorange": "reversed"})
-                st.plotly_chart(fig2, use_container_width=True)
-
-            # ── HIGHLIGHTS ────────────────────────────────────────────────────
-            col_bull, col_bear = st.columns(2)
-            with col_bull:
-                st.subheader("🟢 Recent Bullish Events")
-                for a in summary.get("recent_bullish", []):
-                    with st.container(border=True):
-                        st.markdown(f"**{a['date']} — {a['category']}** | Score: `{a['score']:+}`")
-                        st.caption(a["text"][:200] or "No description")
-                        if a["matched_rules"]:
+                # ── ALL ANNOUNCEMENTS ─────────────────────────────────────────
+                st.markdown('<div class="ca-section-head" style="margin-top:16px">&#x1F4CB; All Announcements</div>', unsafe_allow_html=True)
+                filter_sig = st.multiselect(
+                    "Filter", ["BULLISH", "NEUTRAL", "BEARISH"],
+                    default=["BULLISH", "NEUTRAL", "BEARISH"], key="ann_filter"
+                )
+                for a in parsed:
+                    if a["signal"] not in filter_sig:
+                        continue
+                    label = f"{a['emoji']} {a['date']} — {a['category']} | Score: {a['score']:+.1f}"
+                    with st.expander(label, expanded=False):
+                        st.write(a["text"] or "No description.")
+                        sc1, sc2, sc3 = st.columns(3)
+                        sc1.caption(f"Raw: **{a['raw_score']:+.0f}**")
+                        sc2.caption(f"Category: **{a['cat_weight']}×**")
+                        sc3.caption(f"Recency: **{a['rec_weight']}×**")
+                        if a.get("matched_rules"):
                             st.caption("Triggers: " + " · ".join(a["matched_rules"]))
-                        if a["pdf_url"]:
-                            st.markdown(f"[📄 Open Source Document ↗]({a['pdf_url']})")
-
-            with col_bear:
-                st.subheader("🔴 Recent Bearish Events")
-                bearish_list = [a for a in parsed if a["signal"] == "BEARISH"]
-                if bearish_list:
-                    for a in bearish_list[:3]:
-                        with st.container(border=True):
-                            st.markdown(f"**{a['date']} — {a['category']}** | Score: `{a['score']:+}`")
-                            st.caption(a["text"][:200] or "No description")
-                            if a["matched_rules"]:
-                                st.caption("Triggers: " + " · ".join(a["matched_rules"]))
-                            if a["pdf_url"]:
-                                st.markdown(f"[📄 Open Source Document ↗]({a['pdf_url']})")
-                else:
-                    st.success("No bearish events detected.")
-
-            # ── FULL TABLE ────────────────────────────────────────────────────
-            st.divider()
-            st.subheader("📋 All Announcements")
-
-            filter_sig = st.multiselect(
-                "Filter by signal",
-                ["BULLISH", "NEUTRAL", "BEARISH"],
-                default=["BULLISH", "NEUTRAL", "BEARISH"],
-                key="ann_filter"
+                        if a.get("pdf_url"):
+                            st.link_button("📄 Open NSE Filing", a["pdf_url"])
+        else:
+            st.markdown(
+                '<div class="ca-card">'
+                '<div class="ca-section-head">&#x1F4E2; What this section shows</div>'
+                '<div class="ca-tag green">Dividends</div>'
+                '<div class="ca-tag blue">Acquisitions</div>'
+                '<div class="ca-tag purple">Buybacks</div>'
+                '<div class="ca-tag red">Pledges & Regulatory</div>'
+                '<p style="font-size:13px;color:#6B7280;margin-top:12px">'
+                'Search a company above → Fetch & Score to see weighted announcement analysis.'
+                '</p></div>',
+                unsafe_allow_html=True
             )
-
-            for a in parsed:
-                if a["signal"] not in filter_sig:
-                    continue
-                with st.expander(
-                    f"{a['emoji']} {a['date']} — {a['category']} | Weighted Score: {a['score']:+.1f}",
-                    expanded=False
-                ):
-                    st.write(a["text"] or "No description available.")
-                    if a["matched_rules"]:
-                        st.info("Signal triggers: " + " · ".join(a["matched_rules"]))
-                    # Score breakdown
-                    sc1, sc2, sc3 = st.columns(3)
-                    sc1.caption(f"Raw score: **{a['raw_score']:+.0f}**")
-                    sc2.caption(f"Category weight: **{a['cat_weight']}×**")
-                    sc3.caption(f"Recency weight: **{a['rec_weight']}×**")
-                    if a["pdf_url"]:
-                        fc1, fc2 = st.columns([1, 3])
-                        with fc1:
-                            st.link_button("📄 Open NSE Filing", a["pdf_url"], use_container_width=True)
-                        with fc2:
-                            st.caption(f"Source: NSE Corporate Announcements · {a['size']}")
-    else:
-        st.markdown("""
-        ### What this tab shows:
-        - 📋 All corporate announcements from NSE (up to 100)
-        - 🟢 Auto-scored BULLISH events: dividends, buybacks, acquisitions, order wins
-        - 🔴 Auto-scored BEARISH events: pledge creation, regulatory action, defaults
-        - 📊 Category breakdown chart + sentiment gauge
-
-        **Get started:** Search a company above → Fetch & Score
-        """)
 
 
 # ======== TAB 3: MARKET BUZZ ========
 with tab3:
-    st.subheader("📡 Market Buzz — Real-Time Stock Intelligence")
-    st.caption("Live stock mentions & sentiment from ET Markets, Moneycontrol, LiveMint — refreshes on every page load")
-
-    col_refresh, col_info = st.columns([1, 3])
-    with col_refresh:
+    ref_col, info_col = st.columns([1, 3])
+    with ref_col:
         do_fetch = st.button("🔄 Refresh Now", type="primary", use_container_width=True)
-    with col_info:
-        st.info("Sources: Economic Times Markets · ET Stocks · Moneycontrol · LiveMint")
+    with info_col:
+        st.markdown(
+            '<div style="display:flex;gap:8px;align-items:center;padding:8px 0">'
+            + "".join(f'<span class="ca-tag blue">{s}</span>' for s in ["ET Markets","ET Stocks","Moneycontrol","LiveMint"])
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
     if do_fetch or "buzz_mentions" not in st.session_state:
         with st.spinner("Fetching live news from 4 sources..."):
@@ -837,108 +845,86 @@ with tab3:
 
     buzz_articles = st.session_state.get("buzz_articles", [])
     buzz_mentions = st.session_state.get("buzz_mentions", {})
-    buzz_themes = st.session_state.get("buzz_themes", {})
+    buzz_themes   = st.session_state.get("buzz_themes", {})
 
     if not buzz_mentions:
         st.warning("No stock mentions found. Try refreshing.")
     else:
-        st.success(f"Live: **{len(buzz_articles)} articles** scanned · **{len(buzz_mentions)} stocks** mentioned")
-
-        # ── METRICS ────────────────────────────────────────────────────────────
         bullish_stocks = [s for s, d in buzz_mentions.items() if d["signal"] == "BULLISH"]
         bearish_stocks = [s for s, d in buzz_mentions.items() if d["signal"] == "BEARISH"]
 
+        # ── METRICS ──────────────────────────────────────────────────────────
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("🟢 Bullish Stocks", len(bullish_stocks))
-        m2.metric("🔴 Bearish Stocks", len(bearish_stocks))
-        m3.metric("📰 Articles Scanned", len(buzz_articles))
-        m4.metric("🏢 Stocks Tracked", len(buzz_mentions))
+        m1.metric("Bullish Stocks", len(bullish_stocks))
+        m2.metric("Bearish Stocks", len(bearish_stocks))
+        m3.metric("Articles Scanned", len(buzz_articles))
+        m4.metric("Stocks Tracked", len(buzz_mentions))
 
-        st.divider()
-
-        # ── TRENDING SECTORS ───────────────────────────────────────────────────
-        col_sector, col_stocks = st.columns([1, 2])
+        # ── CHARTS ROW ───────────────────────────────────────────────────────
+        col_sector, col_stocks_chart = st.columns([1, 2])
 
         with col_sector:
-            st.subheader("🔥 Trending Sectors")
             if buzz_themes:
                 themes_list = list(buzz_themes.items())
                 sectors, sector_counts = zip(*themes_list)
-                fig_sector = go.Figure(go.Bar(
-                    x=list(sector_counts),
-                    y=list(sectors),
-                    orientation="h",
-                    marker=dict(
-                        color=list(sector_counts),
-                        colorscale="Purples",
-                        showscale=False,
-                    ),
+                fig_s = go.Figure(go.Bar(
+                    x=list(sector_counts), y=list(sectors), orientation="h",
+                    marker=dict(color=list(sector_counts), colorscale="Purples", showscale=False)
                 ))
-                fig_sector.update_layout(
-                    height=300, margin=dict(t=10, b=10, l=10, r=10),
-                    xaxis_title="Article count",
-                    yaxis={"autorange": "reversed"},
-                )
-                st.plotly_chart(fig_sector, use_container_width=True)
+                fig_s.update_layout(height=280, margin=dict(t=10,b=10,l=10,r=10),
+                                    xaxis_title="Articles", yaxis={"autorange":"reversed"})
+                st.markdown('<div class="ca-card" style="padding:8px"><div class="ca-section-head">&#x1F525; Trending Sectors</div>', unsafe_allow_html=True)
+                st.plotly_chart(fig_s, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        with col_stocks:
-            st.subheader("📈 Most Mentioned Stocks")
+        with col_stocks_chart:
             top_stocks = list(buzz_mentions.items())[:12]
             if top_stocks:
-                syms = [d["symbol"] for _, d in top_stocks]
-                names = [f"{d['symbol']} — {d['name'][:20]}" for _, d in top_stocks]
+                names  = [f"{d['symbol']} — {d['name'][:18]}" for _, d in top_stocks]
                 counts = [d["mentions"] for _, d in top_stocks]
-                colors = [
-                    "#10b981" if d["signal"] == "BULLISH"
-                    else "#ef4444" if d["signal"] == "BEARISH"
-                    else "#f59e0b"
-                    for _, d in top_stocks
-                ]
-                fig_stocks = go.Figure(go.Bar(
-                    x=counts,
-                    y=names,
-                    orientation="h",
-                    marker_color=colors,
-                    text=[f"{d['emoji']} {d['signal']}" for _, d in top_stocks],
-                    textposition="outside",
+                colors = ["#10b981" if d["signal"]=="BULLISH" else "#ef4444" if d["signal"]=="BEARISH" else "#f59e0b" for _,d in top_stocks]
+                fig_st = go.Figure(go.Bar(
+                    x=counts, y=names, orientation="h", marker_color=colors,
+                    text=[f"{d['emoji']} {d['signal']}" for _,d in top_stocks], textposition="outside"
                 ))
-                fig_stocks.update_layout(
-                    height=360, margin=dict(t=10, b=10, l=10, r=80),
-                    xaxis_title="Mentions",
-                    yaxis={"autorange": "reversed"},
-                )
-                st.plotly_chart(fig_stocks, use_container_width=True)
+                fig_st.update_layout(height=280, margin=dict(t=10,b=10,l=10,r=80),
+                                     xaxis_title="Mentions", yaxis={"autorange":"reversed"})
+                st.markdown('<div class="ca-card" style="padding:8px"><div class="ca-section-head">&#x1F4C8; Most Mentioned Stocks</div>', unsafe_allow_html=True)
+                st.plotly_chart(fig_st, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        st.divider()
-
-        # ── STOCK CARDS ────────────────────────────────────────────────────────
-        st.subheader("🗞️ Stock-wise News Feed")
-
+        # ── STOCK NEWS FEED ──────────────────────────────────────────────────
+        st.markdown('<div class="ca-section-head" style="margin-top:16px">&#x1F5DE; Stock-wise News Feed</div>', unsafe_allow_html=True)
         signal_filter = st.multiselect(
-            "Filter by signal",
-            ["BULLISH", "NEUTRAL", "BEARISH"],
-            default=["BULLISH", "BEARISH", "NEUTRAL"],
-            key="buzz_filter"
+            "Filter", ["BULLISH", "NEUTRAL", "BEARISH"],
+            default=["BULLISH", "BEARISH", "NEUTRAL"], key="buzz_filter"
         )
 
         for sym, data in buzz_mentions.items():
             if data["signal"] not in signal_filter:
                 continue
-            with st.expander(
-                f"{data['emoji']} **{sym}** — {data['name']} | {data['mentions']} mentions | {data['signal']} (avg score: {data['avg_score']:+.1f})",
-                expanded=False,
-            ):
-                b1, b2, b3 = st.columns(3)
-                b1.metric("🟢 Bullish Articles", data["buy_recs"])
-                b2.metric("🔴 Bearish Articles", data["sell_recs"])
-                b3.metric("🟡 Neutral Articles", data["hold_recs"])
-                st.divider()
+            sig_cls = {"BULLISH":"green","BEARISH":"red","NEUTRAL":"yellow"}.get(data["signal"],"gray")
+            expander_label = (f"{data['emoji']} {sym} — {data['name']} "
+                              f"| {data['mentions']} mentions | {data['signal']} (score: {data['avg_score']:+.1f})")
+            with st.expander(expander_label, expanded=False):
+                bx1, bx2, bx3 = st.columns(3)
+                bx1.metric("Bullish Articles", data["buy_recs"])
+                bx2.metric("Bearish Articles", data["sell_recs"])
+                bx3.metric("Neutral Articles", data["hold_recs"])
+                art_html = ""
                 for art in data["articles"]:
-                    signal_badge = {"BULLISH": "🟢", "BEARISH": "🔴", "NEUTRAL": "🟡"}.get(art["signal"], "🟡")
-                    st.markdown(f"{signal_badge} **[{art['title']}]({art['link']})** — *{art['source']}*")
+                    art_cls = {"BULLISH":"green","BEARISH":"red","NEUTRAL":"yellow"}.get(art["signal"],"gray")
+                    art_html += (
+                        f'<div class="ca-fin-row">'
+                        f'<span class="ca-tag {art_cls}" style="font-size:10px;margin-right:8px">{_esc(art["signal"])}</span>'
+                        f'<a href="{_esc(art["link"])}" target="_blank" style="font-size:12px;color:#6C63FF;font-weight:500">'
+                        f'{_esc(art["title"][:90])}</a>'
+                        f'<span style="margin-left:auto;font-size:11px;color:#9CA3AF">{_esc(art["source"])}</span>'
+                        f'</div>'
+                    )
+                if art_html:
+                    st.markdown('<div style="margin-top:8px">' + art_html + '</div>', unsafe_allow_html=True)
 
-        # ── RAW HEADLINES ──────────────────────────────────────────────────────
-        st.divider()
         with st.expander("📋 All Raw Headlines"):
             for art in buzz_articles[:40]:
                 st.markdown(f"**{art['source']}** — [{art['title']}]({art['link']})")
