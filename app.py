@@ -7,6 +7,7 @@ from bse_fetcher import fetch_concall_documents, fetch_all_recent_announcements,
 from nse_symbols import search_companies, _load_nse_equity_list
 from announcement_parser import parse_announcements, summarize_announcements
 from social_intel import fetch_all_news, extract_mentions, get_trending_themes
+from event_calendar import fetch_events_for_month, group_by_day, EVENT_COLORS
 
 st.set_page_config(
     page_title="Concall Analyzer",
@@ -453,7 +454,7 @@ def search_nse(query: str) -> list[str]:
 
 
 # ---- TABS ----
-tab1, tab2, tab3, tab4 = st.tabs(["🔎 Search NSE & Analyze", "📤 Upload PDF Manually", "📢 AGM / Announcements", "📡 Market Buzz"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🔎 Search NSE & Analyze", "📤 Upload PDF Manually", "📢 AGM / Announcements", "📡 Market Buzz", "📅 Event Calendar"])
 
 
 # ======== TAB 1: SEARCH ========
@@ -894,3 +895,178 @@ with tab4:
         with st.expander("📋 All Raw Headlines"):
             for art in buzz_articles[:40]:
                 st.markdown(f"**{art['source']}** — [{art['title']}]({art['link']})")
+
+
+# ======== TAB 5: EVENT CALENDAR ========
+with tab5:
+    import calendar as cal_lib
+    from datetime import datetime as dt_lib
+
+    st.subheader("📅 NSE Corporate Event Calendar")
+    st.caption("Board meetings · AGMs · Results dates · Concalls · Dividends — all in one view")
+
+    # ── Controls ──────────────────────────────────────────────────────────────
+    now = dt_lib.now()
+    ctrl1, ctrl2, ctrl3, ctrl4 = st.columns([2, 2, 2, 2])
+    with ctrl1:
+        sel_year = st.selectbox("Year", list(range(2023, 2028)), index=list(range(2023, 2028)).index(now.year))
+    with ctrl2:
+        months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        sel_month_name = st.selectbox("Month", months, index=now.month - 1)
+        sel_month = months.index(sel_month_name) + 1
+    with ctrl3:
+        event_types = ["All"] + list(EVENT_COLORS.keys())
+        filter_type = st.selectbox("Filter by type", event_types)
+    with ctrl4:
+        fetch_btn = st.button("📥 Load Events", type="primary", use_container_width=True)
+
+    if fetch_btn or "cal_events" not in st.session_state or \
+       st.session_state.get("cal_month") != (sel_year, sel_month):
+        with st.spinner(f"Fetching NSE events for {sel_month_name} {sel_year}..."):
+            raw_events = fetch_events_for_month(sel_year, sel_month)
+            st.session_state["cal_events"] = raw_events
+            st.session_state["cal_month"] = (sel_year, sel_month)
+
+    all_events = st.session_state.get("cal_events", [])
+    events = [e for e in all_events if filter_type == "All" or e["type"] == filter_type]
+
+    if not all_events:
+        st.warning("No events found for this month. Try another month or check your connection.")
+    else:
+        # ── Summary strip ─────────────────────────────────────────────────────
+        from collections import Counter
+        type_counts = Counter(e["type"] for e in all_events)
+        cols = st.columns(len(EVENT_COLORS))
+        for i, (etype, style) in enumerate(EVENT_COLORS.items()):
+            count = type_counts.get(etype, 0)
+            if count:
+                cols[i].markdown(
+                    f"<div style='text-align:center; padding:6px 4px; background:{style['bg']}; "
+                    f"border:1px solid {style['border']}; border-radius:8px; font-size:0.8rem;'>"
+                    f"{style['icon']} <b>{style['tag']}</b><br><span style='font-size:1.1rem;font-weight:700'>{count}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
+        st.markdown(f"**{len(events)} events** shown · {len(all_events)} total for {sel_month_name} {sel_year}")
+        st.divider()
+
+        # ── Calendar grid ─────────────────────────────────────────────────────
+        days_by_day = group_by_day(events)
+        num_days = cal_lib.monthrange(sel_year, sel_month)[1]
+        first_weekday = cal_lib.monthrange(sel_year, sel_month)[0]  # 0=Mon
+        day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+        # Render calendar as HTML
+        cal_html = """
+        <style>
+        .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin-top: 8px; }
+        .cal-header { text-align:center; font-size:0.78rem; font-weight:700; color:#6B7280;
+                      padding:6px 0; background:#F9FAFB; border-radius:6px; }
+        .cal-cell { min-height:90px; border:1px solid #E5E7EB; border-radius:8px; padding:6px;
+                    background:#FFFFFF; vertical-align:top; font-size:0.75rem; }
+        .cal-cell.today { border-color:#6C63FF; background:#F5F3FF; }
+        .cal-cell.empty { background:#FAFAFA; border:1px dashed #E5E7EB; }
+        .cal-day-num { font-size:0.85rem; font-weight:700; color:#374151; margin-bottom:4px; }
+        .cal-day-num.today-num { color:#6C63FF; }
+        .cal-event { padding:2px 5px; border-radius:4px; margin-bottom:2px; font-size:0.7rem;
+                     font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+                     cursor:pointer; border-left:3px solid; }
+        .cal-more { font-size:0.68rem; color:#6B7280; margin-top:2px; }
+        </style>
+        <div class='cal-grid'>
+        """
+
+        # Day headers
+        for d in day_names:
+            cal_html += f"<div class='cal-header'>{d}</div>"
+
+        # Empty cells before first day
+        for _ in range(first_weekday):
+            cal_html += "<div class='cal-cell empty'></div>"
+
+        today = dt_lib.now()
+        is_current_month = (sel_year == today.year and sel_month == today.month)
+
+        for day in range(1, num_days + 1):
+            is_today = is_current_month and day == today.day
+            cell_class = "cal-cell today" if is_today else "cal-cell"
+            num_class = "cal-day-num today-num" if is_today else "cal-day-num"
+            cal_html += f"<div class='{cell_class}'><div class='{num_class}'>{day}</div>"
+
+            day_events = days_by_day.get(day, [])
+            show = day_events[:4]
+            rest = len(day_events) - 4
+
+            for ev in show:
+                bg = ev["bg"]
+                border = ev["border"]
+                icon = ev["icon"]
+                sym = ev["symbol"]
+                co = ev["company"].replace("'", "")
+                purp = ev["purpose"].replace("'", "")
+                cal_html += (
+                    f"<div class='cal-event' "
+                    f"style='background:{bg};border-left-color:{border};' "
+                    f"title='{co} — {purp}'>"
+                    f"{icon} {sym}"
+                    f"</div>"
+                )
+            if rest > 0:
+                cal_html += f"<div class='cal-more'>+{rest} more</div>"
+
+            cal_html += "</div>"
+
+        # Fill remaining cells
+        total_cells = first_weekday + num_days
+        remainder = (7 - total_cells % 7) % 7
+        for _ in range(remainder):
+            cal_html += "<div class='cal-cell empty'></div>"
+
+        cal_html += "</div>"
+        st.markdown(cal_html, unsafe_allow_html=True)
+
+        # ── Date detail view ──────────────────────────────────────────────────
+        st.divider()
+        st.subheader("📋 Events by Date — FIFO Order")
+        st.caption("All events sorted earliest first. Click to expand details.")
+
+        # Group and display
+        current_date = None
+        for ev in events:
+            if ev["date_key"] != current_date:
+                current_date = ev["date_key"]
+                st.markdown(
+                    f"<div style='background:#F8F9FF;border-left:4px solid #6C63FF;"
+                    f"padding:6px 12px;border-radius:4px;margin:12px 0 4px 0;"
+                    f"font-weight:700;color:#1A1B3A;font-size:0.95rem;'>"
+                    f"📆 {ev['display_date']}</div>",
+                    unsafe_allow_html=True
+                )
+
+            with st.expander(
+                f"{ev['icon']} **{ev['symbol']}** — {ev['company']} | {ev['tag']} | {ev['purpose'][:60]}",
+                expanded=False
+            ):
+                ec1, ec2 = st.columns([1, 3])
+                with ec1:
+                    ev_bg = ev["bg"]; ev_bd = ev["border"]
+                    ev_ic = ev["icon"]; ev_tg = ev["tag"]
+                    ev_ind = ev["industry"] or "N/A"
+                    st.markdown(
+                        f"<div style='background:{ev_bg};border:1px solid {ev_bd};"
+                        f"border-radius:8px;padding:12px;text-align:center;'>"
+                        f"<div style='font-size:1.8rem'>{ev_ic}</div>"
+                        f"<div style='font-weight:700;color:#1A1B3A;font-size:0.9rem;'>{ev_tg}</div>"
+                        f"<div style='font-size:0.75rem;color:#6B7280;margin-top:4px;'>{ev_ind}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+                with ec2:
+                    st.markdown(f"**Company:** {ev['company']}")
+                    st.markdown(f"**NSE Symbol:** `{ev['symbol']}`")
+                    st.markdown(f"**Date:** {ev['display_date']}")
+                    st.markdown(f"**Event:** {ev['purpose']}")
+                    st.write(ev['desc'] or "No description available.")
+                    if ev["pdf_url"]:
+                        st.link_button("📄 Open Filing", ev["pdf_url"])
