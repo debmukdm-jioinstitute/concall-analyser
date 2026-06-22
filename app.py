@@ -21,157 +21,162 @@ st.set_page_config(
 # ── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-/* ── Force light background everywhere ── */
-.stApp, .main, section[data-testid="stMain"] {
-    background-color: #FFFFFF !important;
-}
+/* ── Base ── */
+html,body,[class*="css"]{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}
+.stApp,.main,section[data-testid="stMain"]{background:#F9FAFB!important}
+.block-container{padding:1.5rem 2rem 3rem 2rem!important;max-width:1400px!important}
 
-/* ── Layout ── */
-.block-container {
-    padding: 2rem 3rem 4rem 3rem !important;
-    max-width: 1300px !important;
-}
+/* ── Navbar header ── */
+.ca-nav{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid #E5E7EB;
+        border-radius:12px;padding:12px 18px;margin-bottom:20px}
+.ca-logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:#111827;margin-right:auto}
+.ca-logo-icon{width:30px;height:30px;background:#6C63FF;border-radius:8px;display:flex;
+              align-items:center;justify-content:center;font-size:16px;line-height:1}
+.ca-live{display:flex;align-items:center;gap:5px;font-size:12px;color:#6B7280;
+         background:#F0FDF4;border:1px solid #BBF7D0;padding:4px 10px;border-radius:20px}
+.ca-live-dot{width:6px;height:6px;background:#10B981;border-radius:50%}
 
-/* ── Typography ── */
-h1, h2, h3, h4 {
-    color: #111827 !important;
-    font-weight: 700 !important;
-}
-h1 { font-size: 1.9rem !important; margin-bottom: 0.3rem !important; }
-h2 { font-size: 1.3rem !important; margin: 1.4rem 0 0.6rem 0 !important; }
-h3 { font-size: 1.05rem !important; margin: 1rem 0 0.4rem 0 !important; }
+/* ── Cards ── */
+.ca-card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.ca-card-title{font-size:11px!important;font-weight:700!important;color:#6B7280!important;
+               text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.ca-verdict{border-radius:10px;padding:12px 16px;margin-bottom:16px;border-left:4px solid}
+.ca-verdict.buy{background:#F0FDF4;border-color:#10B981}
+.ca-verdict.sell{background:#FEF2F2;border-color:#EF4444}
+.ca-verdict.hold{background:#FFFBEB;border-color:#F59E0B}
+.ca-verdict-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.ca-verdict-tag.buy{color:#059669}
+.ca-verdict-tag.sell{color:#DC2626}
+.ca-verdict-tag.hold{color:#D97706}
+.ca-verdict-text{font-size:14px;font-weight:600;color:#111827;line-height:1.5}
+.ca-metric-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.ca-metric{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px}
+.ca-metric-label{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;
+                 letter-spacing:.06em;margin-bottom:4px}
+.ca-metric-value{font-size:18px;font-weight:700;color:#111827;line-height:1.2}
+.ca-metric-sub{font-size:11px;margin-top:3px}
+.ca-metric-sub.up{color:#059669}.ca-metric-sub.dn{color:#DC2626}.ca-metric-sub.neu{color:#6B7280}
+.ca-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.ca-fin-row{display:flex;justify-content:space-between;align-items:baseline;
+            padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:13px}
+.ca-fin-row:last-child{border:none}
+.ca-fin-label{color:#6B7280}.ca-fin-val{font-weight:600;color:#111827}
+.ca-fin-delta{font-size:11px;margin-left:4px}
+.ca-fin-delta.up{color:#059669}.ca-fin-delta.dn{color:#DC2626}
+.ca-tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;
+        border-radius:20px;margin:2px 3px 2px 0}
+.ca-tag.green{background:#DCFCE7;color:#15803D}
+.ca-tag.red{background:#FEE2E2;color:#B91C1C}
+.ca-tag.yellow{background:#FEF9C3;color:#A16207}
+.ca-tag.blue{background:#DBEAFE;color:#1D4ED8}
+.ca-tag.purple{background:#EDE9FE;color:#6D28D9}
+.ca-tag.gray{background:#F3F4F6;color:#374151}
+.ca-qa-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #F3F4F6}
+.ca-qa-item:last-child{border:none}
+.ca-qa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.ca-qa-q{font-size:12px;color:#6B7280;margin-bottom:2px}
+.ca-qa-a{font-size:13px;font-weight:500;color:#111827;font-style:italic;line-height:1.5}
+.ca-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:auto;
+          flex-shrink:0;text-transform:uppercase;letter-spacing:.04em}
+.ca-badge.clear{background:#DCFCE7;color:#15803D}
+.ca-badge.vague{background:#FEF9C3;color:#A16207}
+.ca-badge.deflect{background:#FEE2E2;color:#B91C1C}
+.ca-badge.strong{background:#EDE9FE;color:#6D28D9}
+.ca-section-head{font-size:12px!important;font-weight:700!important;color:#374151!important;
+                 display:flex;align-items:center;gap:6px;margin:14px 0 8px 0;
+                 padding-bottom:6px;border-bottom:1px solid #E5E7EB}
+.ca-rec{display:inline-block;font-size:18px;font-weight:800;padding:6px 20px;border-radius:10px;margin-top:8px}
+.ca-rec.buy{background:#DCFCE7;color:#15803D}
+.ca-rec.sell{background:#FEE2E2;color:#B91C1C}
+.ca-rec.hold{background:#FEF9C3;color:#A16207}
+.ca-rec.accumulate{background:#DBEAFE;color:#1D4ED8}
+.ca-rec.reduce{background:#FFEDD5;color:#C2410C}
 
-p, li, span, label, div {
-    color: #374151 !important;
-    font-size: 0.95rem !important;
-    line-height: 1.7 !important;
-}
-
-/* ── Metric cards ── */
-[data-testid="metric-container"] {
-    background: #F9FAFB !important;
-    border: 1.5px solid #E5E7EB !important;
-    border-radius: 12px !important;
-    padding: 1rem 1.1rem !important;
-}
-[data-testid="stMetricLabel"] p,
-[data-testid="metric-container"] label {
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    color: #6B7280 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.06em !important;
-}
-[data-testid="stMetricValue"] {
-    font-size: 1.3rem !important;
-    font-weight: 700 !important;
-    color: #111827 !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-}
+/* ── Metrics (Streamlit native) ── */
+[data-testid="metric-container"]{background:#fff!important;border:1px solid #E5E7EB!important;
+    border-radius:10px!important;padding:.85rem 1rem!important}
+[data-testid="stMetricLabel"] p{font-size:.7rem!important;font-weight:700!important;
+    color:#6B7280!important;text-transform:uppercase!important;letter-spacing:.06em!important}
+[data-testid="stMetricValue"]{font-size:1.25rem!important;font-weight:700!important;
+    color:#111827!important;word-break:break-word!important}
 
 /* ── Tabs ── */
-[data-baseweb="tab"] p {
-    font-size: 0.9rem !important;
-    font-weight: 600 !important;
-    color: #4B5563 !important;
-}
-[aria-selected="true"] p {
-    color: #6C63FF !important;
-}
+[data-baseweb="tab"] p{font-size:.9rem!important;font-weight:600!important;color:#6B7280!important}
+[aria-selected="true"] p{color:#6C63FF!important}
+[data-baseweb="tab-list"]{border-bottom:2px solid #E5E7EB!important}
 
-/* ── Expander ── */
-details summary {
-    font-size: 0.9rem !important;
-    font-weight: 600 !important;
-    color: #1F2937 !important;
-    padding: 0.5rem 0 !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-}
+/* ── Expanders ── */
+details summary{font-size:.88rem!important;font-weight:600!important;color:#111827!important;
+    white-space:normal!important;word-break:break-word!important}
 
-/* ── Alert / info boxes ── */
-[data-testid="stAlert"] p {
-    font-size: 0.9rem !important;
-    line-height: 1.65 !important;
-    color: inherit !important;
-}
+/* ── Alerts ── */
+[data-testid="stAlert"] p{font-size:.88rem!important;line-height:1.6!important;color:inherit!important}
 
-/* ── Caption ── */
-[data-testid="stCaptionContainer"] p,
-small {
-    font-size: 0.8rem !important;
-    color: #6B7280 !important;
-    line-height: 1.5 !important;
-}
+/* ── Captions ── */
+[data-testid="stCaptionContainer"] p{font-size:.78rem!important;color:#9CA3AF!important}
 
 /* ── Sidebar ── */
-[data-testid="stSidebar"] {
-    background: #F9FAFB !important;
-    border-right: 1px solid #E5E7EB !important;
-}
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] li {
-    font-size: 0.87rem !important;
-    color: #374151 !important;
-    line-height: 1.75 !important;
-}
+[data-testid="stSidebar"]{background:#fff!important;border-right:1px solid #E5E7EB!important}
+[data-testid="stSidebar"] p,[data-testid="stSidebar"] li{font-size:.86rem!important;
+    color:#374151!important;line-height:1.7!important}
 
 /* ── Buttons ── */
-button[kind="primary"] {
-    background: #6C63FF !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-}
-button[kind="secondary"] {
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-}
+button[kind="primary"]{background:#6C63FF!important;color:#fff!important;
+    border:none!important;border-radius:8px!important;font-weight:600!important}
 
-/* ── Text inputs ── */
-input, textarea, select {
-    font-size: 0.9rem !important;
-    color: #111827 !important;
-}
+/* ── Inputs ── */
+input,textarea,select{font-size:.9rem!important;color:#111827!important}
 
-/* ── No text cut anywhere ── */
-* { overflow-wrap: break-word !important; word-break: break-word !important; }
-
-/* ── Divider ── */
-hr { border-color: #E5E7EB !important; margin: 1.2rem 0 !important; }
+/* ── Global ── */
+*{overflow-wrap:break-word!important;word-break:break-word!important}
+hr{border-color:#E5E7EB!important;margin:1rem 0!important}
 </style>
 """, unsafe_allow_html=True)
 
+# ── App header ────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="margin-bottom: 1.5rem;">
-  <h1 style="margin-bottom:4px;">📊 ConcallAnalyser — India</h1>
-  <p style="color:#6B7280; font-size:1rem; margin:0;">
-    Search any NSE company · Pull concall PDFs · Corporate announcements · Market buzz · AI investment signals
-  </p>
+<div class="ca-nav">
+  <div class="ca-logo">
+    <div class="ca-logo-icon">📊</div>
+    ConcallAnalyser
+  </div>
+  <span style="font-size:12px;color:#9CA3AF;">NSE · BSE · AI-Powered Investment Intelligence</span>
+  <div class="ca-live">
+    <div class="ca-live-dot"></div>
+    NSE Live
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 📖 How to use")
     st.markdown("""
-**📊 Concall Analyzer**
-Search NSE or upload PDF → AI deep analysis
-
-**🏛️ Corporate Intelligence**
-Announcement scorer + Event Calendar
-
-**📡 Market Buzz**
-Real-time stock mentions from 4 news sources
-    """)
+<div style="text-align:center;padding:12px 0 16px">
+  <div style="font-size:24px;font-weight:800;color:#111827">📊</div>
+  <div style="font-size:14px;font-weight:700;color:#111827;margin-top:4px">ConcallAnalyser</div>
+  <div style="font-size:11px;color:#9CA3AF;margin-top:2px">India's AI Finance Tool</div>
+</div>
+""", unsafe_allow_html=True)
+    st.divider()
+    st.markdown("**Navigate**")
+    st.markdown("""
+- 📊 **Concall Analyzer** — Search NSE or upload PDF
+- 🏛️ **Corporate Intelligence** — Announcements + Calendar
+- 📡 **Market Buzz** — Live news mentions
+""")
+    st.divider()
+    st.markdown("**Quick tips**")
+    st.markdown("""
+- Type 2+ letters to search 2000+ companies
+- ZOMATO → auto-resolves to ETERNAL
+- Analysis takes 15–30 seconds
+- Export raw JSON from any analysis
+""")
     st.divider()
     st.markdown("""
-<div style="font-size:0.8rem; color:#9CA3AF; line-height:1.8;">
-  🤖 Powered by Groq + Llama 3.3 70B<br>
-  📡 Data: NSE Corporate Filings<br>
-  📰 News: ET Markets · Moneycontrol · LiveMint
+<div style="font-size:11px;color:#9CA3AF;line-height:1.8;text-align:center">
+  Powered by Groq · Llama 3.3 70B<br>
+  Data: NSE · Screener.in · ET Markets
 </div>
 """, unsafe_allow_html=True)
 
@@ -182,258 +187,271 @@ def _val(v, fallback="Not mentioned"):
     return v
 
 
+def _tag(text: str, color: str = "gray") -> str:
+    return f'<span class="ca-tag {color}">{text}</span>'
+
+
+def _fin_row(label: str, value: str, delta: str = "", delta_up: bool = True) -> str:
+    dc = "up" if delta_up else "dn"
+    dhtml = f'<span class="ca-fin-delta {dc}">{delta}</span>' if delta else ""
+    return f'<div class="ca-fin-row"><span class="ca-fin-label">{label}</span><span class="ca-fin-val">{value} {dhtml}</span></div>'
+
+
 def render_analysis(result: dict):
     if "error" in result:
         st.error(f"Analysis error: {result['error']}")
         st.code(result.get("raw", ""))
         return
 
-    # Support both old flat structure and new nested structure
-    hv = result.get("headline_verdict", result)
-    mgmt = result.get("management_assessment", {})
-    fin = result.get("financials_reported", {})
-    guid = result.get("guidance", {})
-    themes = result.get("key_themes", {})
-    segments = result.get("segment_analysis", [])
-    qa = result.get("analyst_qa_highlights", [])
-    comp = result.get("competitive_landscape", {})
-    outlook = result.get("outlook_summary", {})
-    inv = result.get("investor_summary", {})
+    hv    = result.get("headline_verdict", result)
+    mgmt  = result.get("management_assessment", {}) or {}
+    fin   = result.get("financials_reported", {}) or {}
+    guid  = result.get("guidance", {}) or {}
+    themes = result.get("key_themes", {}) or {}
+    segs  = result.get("segment_analysis", []) or []
+    qa    = result.get("analyst_qa_highlights", []) or []
+    comp  = result.get("competitive_landscape", {}) or {}
+    out   = result.get("outlook_summary", {}) or {}
+    inv   = result.get("investor_summary", {}) or {}
 
-    signal = hv.get("intraday_signal", result.get("intraday_signal", "HOLD"))
-    sentiment = hv.get("overall_sentiment", result.get("overall_sentiment", "NEUTRAL"))
-    score = hv.get("sentiment_score", result.get("sentiment_score", 0)) or 0
-    confidence = hv.get("signal_confidence", "MEDIUM")
-    verdict = hv.get("one_line_verdict", "")
-    rec = inv.get("recommendation", signal)
+    signal    = hv.get("intraday_signal", result.get("intraday_signal", "HOLD")) or "HOLD"
+    sentiment = hv.get("overall_sentiment", result.get("overall_sentiment", "NEUTRAL")) or "NEUTRAL"
+    score     = hv.get("sentiment_score", result.get("sentiment_score", 0)) or 0
+    confidence = hv.get("signal_confidence", "MEDIUM") or "MEDIUM"
+    verdict   = hv.get("one_line_verdict") or hv.get("signal_reasoning") or result.get("signal_reasoning", "")
+    rec       = inv.get("recommendation", signal) or signal
+    tone      = mgmt.get("tone", "N/A") or "N/A"
+    cred      = mgmt.get("credibility_score", "?")
+
+    sig_cls = {"BUY":"buy","ACCUMULATE":"buy","SELL":"sell","REDUCE":"sell","AVOID":"sell","HOLD":"hold"}.get(signal,"hold")
+    rec_cls = {"BUY":"buy","ACCUMULATE":"accumulate","SELL":"sell","REDUCE":"reduce","AVOID":"sell","HOLD":"hold"}.get(rec,"hold")
 
     # ── VERDICT BANNER ────────────────────────────────────────────────────────
-    sig_color = {"BUY": "#10b981", "SELL": "#ef4444", "HOLD": "#f59e0b",
-                 "ACCUMULATE": "#10b981", "REDUCE": "#ef4444", "AVOID": "#ef4444"}.get(signal, "#6b7280")
     st.markdown(f"""
-    <div style="background:{sig_color}15; border-left: 4px solid {sig_color};
-                padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1rem;">
-        <div style="font-size:0.75rem; font-weight:700; color:{sig_color};
-                    text-transform:uppercase; letter-spacing:0.08em;">
-            {sentiment} · {signal} · Confidence: {confidence}
-        </div>
-        <div style="font-size:1.05rem; font-weight:600; color:#111827; margin-top:4px;">
-            {verdict or hv.get("signal_reasoning", result.get("signal_reasoning", ""))}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+<div class="ca-verdict {sig_cls}">
+  <div class="ca-verdict-tag {sig_cls}">{sentiment} &nbsp;·&nbsp; {signal} &nbsp;·&nbsp; Confidence: {confidence}</div>
+  <div class="ca-verdict-text">{verdict}</div>
+</div>""", unsafe_allow_html=True)
 
-    # ── TOP METRICS ───────────────────────────────────────────────────────────
-    m1, m2, m3, m4, m5 = st.columns(5)
-    sig_emoji = {"BUY": "🟢", "SELL": "🔴", "HOLD": "🟡", "ACCUMULATE": "🟢", "REDUCE": "🔴", "AVOID": "🔴"}
-    m1.metric("Signal", f"{sig_emoji.get(signal,'🟡')} {signal}")
-    m2.metric("Sentiment Score", f"{score:+}/10")
-    sent_e = {"BULLISH": "🟢", "BEARISH": "🔴", "NEUTRAL": "🟡"}.get(sentiment, "🟡")
-    m3.metric("Sentiment", f"{sent_e} {sentiment}")
-    m4.metric("Mgmt Tone", _val(mgmt.get("tone"), "N/A"))
-    m5.metric("Credibility", f"{_val(mgmt.get('credibility_score'), '?')}/10")
+    # ── 5 METRIC CARDS ────────────────────────────────────────────────────────
+    try: score_f = float(score)
+    except: score_f = 0
+    score_color = "#059669" if score_f >= 3 else "#DC2626" if score_f <= -2 else "#D97706"
+    sent_sub = {"BULLISH":"up","BEARISH":"dn","NEUTRAL":"neu"}.get(sentiment,"neu")
 
-    # ── GAUGE ─────────────────────────────────────────────────────────────────
-    try:
-        score_num = float(score)
-    except (TypeError, ValueError):
-        score_num = 0
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=score_num,
-        number={"suffix": "/10"},
-        domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Sentiment Score"},
-        gauge={
-            "axis": {"range": [-10, 10]},
-            "bar": {"color": "#6C63FF"},
-            "steps": [
-                {"range": [-10, -3], "color": "#fee2e2"},
-                {"range": [-3, 3],   "color": "#fef9c3"},
-                {"range": [3, 10],   "color": "#dcfce7"},
-            ],
-        }
-    ))
-    fig.update_layout(height=220, margin=dict(t=30, b=10))
-    st.plotly_chart(fig, use_container_width=True)
-    st.divider()
+    st.markdown(f"""
+<div class="ca-metric-grid">
+  <div class="ca-metric">
+    <div class="ca-metric-label">Signal</div>
+    <div class="ca-metric-value" style="color:{score_color}">{signal}</div>
+    <div class="ca-metric-sub {sent_sub}">{sentiment}</div>
+  </div>
+  <div class="ca-metric">
+    <div class="ca-metric-label">Sentiment Score</div>
+    <div class="ca-metric-value" style="color:{score_color}">{score_f:+.1f}</div>
+    <div class="ca-metric-sub neu">out of ±10</div>
+  </div>
+  <div class="ca-metric">
+    <div class="ca-metric-label">Mgmt Tone</div>
+    <div class="ca-metric-value" style="font-size:15px">{tone}</div>
+    <div class="ca-metric-sub neu">Credibility: {cred}/10</div>
+  </div>
+  <div class="ca-metric">
+    <div class="ca-metric-label">Revenue</div>
+    <div class="ca-metric-value" style="font-size:15px">{_val(fin.get("revenue"),"—")}</div>
+    <div class="ca-metric-sub up">{_val(fin.get("revenue_growth_yoy"),"")}</div>
+  </div>
+  <div class="ca-metric">
+    <div class="ca-metric-label">EBITDA Margin</div>
+    <div class="ca-metric-value" style="font-size:15px">{_val(fin.get("ebitda_margin"),"—")}</div>
+    <div class="ca-metric-sub up">{_val(fin.get("ebitda_margin_change"),"")}</div>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-    # ── SECTION 1: FINANCIALS ─────────────────────────────────────────────────
-    st.subheader("💰 Financials Reported")
-    f1, f2, f3 = st.columns(3)
-    with f1:
-        st.markdown("**Revenue**")
-        st.write(_val(fin.get("revenue")))
-        st.caption(f"YoY: {_val(fin.get('revenue_growth_yoy'))} | QoQ: {_val(fin.get('revenue_growth_qoq'))}")
+    # ── ROW 1: POSITIVES + FINANCIALS ─────────────────────────────────────────
+    col_a, col_b = st.columns([1, 1])
 
-        st.markdown("**EBITDA**")
-        st.write(_val(fin.get("ebitda")))
-        st.caption(f"Margin: {_val(fin.get('ebitda_margin'))} ({_val(fin.get('ebitda_margin_change'))})")
+    with col_a:
+        positives = themes.get("positives", result.get("key_positives", []))
+        pos_tags = "".join(_tag(p[:60], "green") for p in positives[:5])
+        tailwinds = themes.get("tailwinds", [])
+        tw_tags = "".join(_tag(t[:50], "blue") for t in tailwinds[:3])
 
-    with f2:
-        st.markdown("**PAT (Net Profit)**")
-        st.write(_val(fin.get("pat")))
-        st.caption(f"Growth: {_val(fin.get('pat_growth_yoy'))}")
+        risks = themes.get("risks", result.get("key_risks", []))
+        risk_tags = "".join(_tag(r[:60], "red") for r in risks[:4])
+        headwinds = themes.get("headwinds", [])
+        hw_tags = "".join(_tag(h[:50], "yellow") for h in headwinds[:3])
 
-        st.markdown("**Gross Margin**")
-        st.write(_val(fin.get("gross_margin")))
-        st.caption(f"EPS: {_val(fin.get('eps'))}")
+        red_flags = themes.get("red_flags", result.get("red_flags", []))
+        rf_html = ""
+        if red_flags:
+            rf_tags = "".join(_tag(f[:60], "red") for f in red_flags[:3])
+            rf_html = f'<div class="ca-section-head">🚩 Red Flags</div>{rf_tags}'
 
-    with f3:
-        st.markdown("**Debt**")
-        st.write(_val(fin.get("debt_level")))
-        st.caption(f"Cash: {_val(fin.get('cash_and_equivalents'))}")
+        st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">✅ Key Positives {("& Tailwinds" if tailwinds else "")}</div>
+  {pos_tags}{tw_tags}
+  <div class="ca-section-head" style="margin-top:14px">⚠️ Risks {("& Headwinds" if headwinds else "")}</div>
+  {risk_tags}{hw_tags}
+  {rf_html}
+</div>""", unsafe_allow_html=True)
 
-        st.markdown("**Capex**")
-        st.write(_val(fin.get("capex")))
-        if fin.get("order_book"):
-            st.caption(f"Order book: {fin['order_book']}")
-        if fin.get("deal_wins_tcv"):
-            st.caption(f"Deal TCV: {fin['deal_wins_tcv']}")
+    with col_b:
+        rows = ""
+        pairs = [
+            ("Revenue", fin.get("revenue"), fin.get("revenue_growth_yoy")),
+            ("EBITDA",  fin.get("ebitda"),  fin.get("ebitda_margin")),
+            ("PAT",     fin.get("pat"),      fin.get("pat_growth_yoy")),
+            ("Debt",    fin.get("debt_level"), fin.get("cash_and_equivalents") and f"Cash: {fin.get('cash_and_equivalents')}"),
+            ("Capex",   fin.get("capex"),    fin.get("order_book") and f"OB: {fin.get('order_book')}"),
+        ]
+        for label, val, delta in pairs:
+            if val:
+                is_up = delta and any(c in str(delta) for c in ["+", "↑", "up", "Up"])
+                rows += _fin_row(label, str(val), str(delta) if delta else "", is_up)
 
-    st.divider()
+        st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">💰 Financials Reported</div>
+  {rows if rows else "<p style='color:#9CA3AF;font-size:13px'>No financial data extracted</p>"}
+</div>""", unsafe_allow_html=True)
 
-    # ── SECTION 2: GUIDANCE ───────────────────────────────────────────────────
-    st.subheader("🔭 Management Guidance")
-    if guid.get("guidance_changed"):
-        st.warning(f"⚠️ Guidance revised: {_val(guid.get('guidance_change_detail'))}")
+    # ── ROW 2: GUIDANCE + MANAGEMENT ──────────────────────────────────────────
+    col_c, col_d = st.columns([1, 1])
 
-    g1, g2 = st.columns(2)
-    with g1:
-        st.markdown(f"**Revenue Guidance:** {_val(guid.get('revenue_guidance'))}")
-        st.markdown(f"**Margin Guidance:** {_val(guid.get('margin_guidance'))}")
-        st.markdown(f"**Growth Guidance:** {_val(guid.get('growth_guidance'))}")
-    with g2:
-        st.markdown(f"**Capex Plan:** {_val(guid.get('capex_guidance'))}")
-        st.markdown(f"**Hiring Plan:** {_val(guid.get('hiring_guidance'))}")
-        st.markdown(f"**Dividend Policy:** {_val(guid.get('dividend_guidance'))}")
-    st.divider()
+    with col_c:
+        changed_html = ""
+        if guid.get("guidance_changed"):
+            changed_html = f'<div class="ca-tag yellow" style="margin-bottom:8px">⚠️ Guidance revised</div><p style="font-size:12px;color:#374151">{_val(guid.get("guidance_change_detail"))}</p>'
+        g_rows = ""
+        g_pairs = [
+            ("Revenue", guid.get("revenue_guidance")),
+            ("Margin",  guid.get("margin_guidance")),
+            ("Growth",  guid.get("growth_guidance")),
+            ("Capex",   guid.get("capex_guidance")),
+            ("Hiring",  guid.get("hiring_guidance")),
+            ("Dividend",guid.get("dividend_guidance")),
+        ]
+        for label, val in g_pairs:
+            if val:
+                g_rows += f'<div class="ca-fin-row"><span class="ca-fin-label">{label}</span><span class="ca-fin-val">{val}</span></div>'
 
-    # ── SECTION 3: KEY THEMES ─────────────────────────────────────────────────
-    st.subheader("📊 Key Themes")
-    t1, t2 = st.columns(2)
-    with t1:
-        st.markdown("**✅ Positives**")
-        for p in themes.get("positives", result.get("key_positives", [])):
-            st.success(p)
-        st.markdown("**🌬️ Tailwinds**")
-        for tw in themes.get("tailwinds", []):
-            st.info(tw)
-    with t2:
-        st.markdown("**⚠️ Risks**")
-        for r in themes.get("risks", result.get("key_risks", [])):
-            st.error(r)
-        st.markdown("**🌧️ Headwinds**")
-        for hw in themes.get("headwinds", []):
-            st.warning(hw)
+        st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">🔭 Management Guidance</div>
+  {changed_html}
+  {g_rows if g_rows else "<p style='color:#9CA3AF;font-size:13px'>No guidance mentioned</p>"}
+</div>""", unsafe_allow_html=True)
 
-    red_flags = themes.get("red_flags", result.get("red_flags", []))
-    if red_flags:
-        st.markdown("**🚩 Red Flags**")
-        for f in red_flags:
-            st.error(f"🚩 {f}")
-    st.divider()
+    with col_d:
+        speakers = "".join(f'<div class="ca-tag gray">{s}</div>' for s in mgmt.get("key_speakers", [])[:4])
+        stmts_html = "".join(
+            f'<div style="font-size:12px;font-style:italic;color:#374151;padding:5px 0;border-bottom:1px solid #F3F4F6">'
+            f'&ldquo;{s[:120]}&rdquo;</div>'
+            for s in mgmt.get("strong_statements", [])[:3]
+        )
+        evasive = "".join(f'<div class="ca-tag yellow">{q[:70]}</div>' for q in mgmt.get("evasive_questions", [])[:3])
 
-    # ── SECTION 4: MANAGEMENT ASSESSMENT ─────────────────────────────────────
-    st.subheader("🎙️ Management Assessment")
-    ma1, ma2 = st.columns(2)
-    with ma1:
-        st.markdown(f"**Tone:** `{_val(mgmt.get('tone'))}`")
-        st.write(_val(mgmt.get("tone_reasoning")))
-        st.markdown("**Key Speakers:**")
-        for spk in mgmt.get("key_speakers", []):
-            st.caption(f"• {spk}")
-    with ma2:
-        st.markdown("**Strong Statements:**")
-        for stmt in mgmt.get("strong_statements", []):
-            st.info(f"💬 *\"{stmt}\"*")
-        if mgmt.get("evasive_questions"):
-            st.markdown("**Questions Dodged:**")
-            for q in mgmt.get("evasive_questions", []):
-                st.warning(f"🔍 {q}")
-    st.divider()
+        st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">🎙️ Management Assessment</div>
+  <div style="font-size:13px;margin-bottom:8px">
+    <strong>Tone:</strong> {tone} &nbsp;&nbsp; <strong>Credibility:</strong> {cred}/10
+  </div>
+  <p style="font-size:12px;color:#6B7280;margin-bottom:8px">{_val(mgmt.get("tone_reasoning"))}</p>
+  {('<div style="margin-bottom:6px">' + speakers + '</div>') if speakers else ""}
+  {stmts_html}
+  {('<div class="ca-section-head" style="margin-top:8px">Questions dodged</div>' + evasive) if evasive else ""}
+</div>""", unsafe_allow_html=True)
 
-    # ── SECTION 5: SEGMENT ANALYSIS ───────────────────────────────────────────
-    if segments:
-        st.subheader("📦 Segment Analysis")
-        for seg in segments:
-            with st.expander(f"**{seg.get('segment_name', 'Segment')}** — {_val(seg.get('revenue'))} | Growth: {_val(seg.get('growth'))}"):
-                sc1, sc2 = st.columns(2)
-                sc1.metric("Revenue", _val(seg.get("revenue")))
-                sc2.metric("Growth", _val(seg.get("growth")))
-                if seg.get("margin"):
-                    st.caption(f"Margin: {seg['margin']}")
-                st.write(_val(seg.get("outlook")))
-        st.divider()
-
-    # ── SECTION 6: ANALYST Q&A ────────────────────────────────────────────────
+    # ── ANALYST Q&A ───────────────────────────────────────────────────────────
     if qa:
-        st.subheader("❓ Analyst Q&A Highlights")
-        for item in qa:
-            quality = item.get("management_answer_quality", "")
-            q_color = {"Clear": "✅", "Strong": "✅", "Vague": "🟡", "Deflected": "🔴"}.get(quality, "🟡")
-            with st.expander(f"{q_color} {_val(item.get('question_topic'))} — *{_val(item.get('analyst_firm', 'Analyst'))}* · Answer: {quality}"):
-                st.write(_val(item.get("key_takeaway")))
-        st.divider()
+        qa_html = ""
+        badge_map = {"Clear":"clear","Strong":"strong","Vague":"vague","Deflected":"deflect"}
+        dot_color = {"Clear":"#10B981","Strong":"#6C63FF","Vague":"#F59E0B","Deflected":"#EF4444"}
+        for item in qa[:6]:
+            quality = item.get("management_answer_quality","")
+            firm = item.get("analyst_firm","Analyst") or "Analyst"
+            topic = item.get("question_topic","") or ""
+            tkaway = item.get("key_takeaway","") or ""
+            bc = badge_map.get(quality,"vague")
+            dc = dot_color.get(quality,"#9CA3AF")
+            qa_html += f"""
+<div class="ca-qa-item">
+  <div class="ca-qa-dot" style="background:{dc}"></div>
+  <div style="flex:1">
+    <div class="ca-qa-q">{firm} — {topic[:70]}</div>
+    <div class="ca-qa-a">{tkaway[:150]}</div>
+  </div>
+  <span class="ca-badge {bc}">{quality}</span>
+</div>"""
+        st.markdown(f'<div class="ca-card"><div class="ca-section-head">❓ Analyst Q&A Highlights</div>{qa_html}</div>', unsafe_allow_html=True)
 
-    # ── SECTION 7: COMPETITIVE LANDSCAPE ─────────────────────────────────────
-    if comp and any(comp.values()):
-        st.subheader("🏆 Competitive Landscape")
-        cp1, cp2 = st.columns(2)
-        with cp1:
-            if comp.get("competitors_mentioned"):
-                st.markdown("**Competitors Mentioned:**")
-                st.write(", ".join(comp["competitors_mentioned"]))
-            st.markdown(f"**Market Share:** {_val(comp.get('market_share_commentary'))}")
-            st.markdown(f"**Pricing Power:** {_val(comp.get('pricing_power'))}")
-        with cp2:
-            if comp.get("competitive_advantages_cited"):
-                st.markdown("**Moats Cited:**")
-                for adv in comp["competitive_advantages_cited"]:
-                    st.success(adv)
-        st.divider()
+    # ── SEGMENTS (expanders, less visual weight) ───────────────────────────────
+    if segs:
+        with st.expander(f"📦 Segment Analysis — {len(segs)} segments"):
+            for seg in segs:
+                sc1, sc2 = st.columns([1, 2])
+                sc1.metric(seg.get("segment_name","Segment"), _val(seg.get("revenue")))
+                sc2.write(_val(seg.get("outlook")))
 
-    # ── SECTION 8: OUTLOOK ────────────────────────────────────────────────────
-    st.subheader("🔮 Outlook & Monitorables")
-    o1, o2 = st.columns(2)
-    with o1:
-        st.markdown(f"**Next Quarter:** {_val(outlook.get('short_term_1q'))}")
-        st.markdown(f"**1-Year View:** {_val(outlook.get('medium_term_1y'))}")
-        if outlook.get("catalysts"):
-            st.markdown("**Catalysts to Watch:**")
-            for c in outlook["catalysts"]:
-                st.success(c)
-    with o2:
-        if outlook.get("key_monitorables"):
-            st.markdown("**Key Monitorables:**")
-            for m in outlook["key_monitorables"]:
-                st.info(f"👁 {m}")
-        if outlook.get("risks_to_watch"):
-            st.markdown("**Risks to Watch:**")
-            for r in outlook["risks_to_watch"]:
-                st.error(r)
-    st.divider()
+    # ── OUTLOOK ───────────────────────────────────────────────────────────────
+    mon_tags = "".join(_tag(m[:60],"blue") for m in out.get("key_monitorables",[])[:4])
+    cat_tags = "".join(_tag(c[:60],"green") for c in out.get("catalysts",[])[:3])
+    rsk_tags = "".join(_tag(r[:60],"red") for r in out.get("risks_to_watch",[])[:3])
+    short_t = _val(out.get("short_term_1q"))
+    long_t  = _val(out.get("medium_term_1y"))
 
-    # ── SECTION 9: INVESTOR SUMMARY ───────────────────────────────────────────
-    st.subheader("📝 Investor Summary")
-    st.info(f"**For Retail Investors:** {_val(inv.get('for_retail_investor', result.get('analyst_summary', '')))}")
+    st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">🔮 Outlook & Monitorables</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Next Quarter</div>
+      <p style="font-size:13px;color:#374151;margin-bottom:10px">{short_t}</p>
+      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">1-Year View</div>
+      <p style="font-size:13px;color:#374151">{long_t}</p>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Watch List</div>
+      {mon_tags}
+      <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">Catalysts</div>
+      {cat_tags if cat_tags else '<span style="font-size:12px;color:#9CA3AF">None mentioned</span>'}
+      <div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">Downside Risks</div>
+      {rsk_tags if rsk_tags else '<span style="font-size:12px;color:#9CA3AF">None mentioned</span>'}
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-    bc1, bc2 = st.columns(2)
-    with bc1:
-        st.markdown("**🐂 Bull Case:**")
-        st.success(_val(inv.get("buy_case")))
-    with bc2:
-        st.markdown("**🐻 Bear Case:**")
-        st.error(_val(inv.get("sell_case")))
+    # ── INVESTOR SUMMARY + RECOMMENDATION ─────────────────────────────────────
+    retail_txt  = _val(inv.get("for_retail_investor", result.get("analyst_summary","")))
+    bull_txt    = _val(inv.get("buy_case"))
+    bear_txt    = _val(inv.get("sell_case"))
+    tp_txt      = inv.get("target_price_mentioned","")
 
-    if inv.get("target_price_mentioned"):
-        st.caption(f"Analyst target prices mentioned: {inv['target_price_mentioned']}")
+    st.markdown(f"""
+<div class="ca-card">
+  <div class="ca-section-head">📝 Investor Summary</div>
+  <p style="font-size:13px;color:#374151;margin-bottom:14px">{retail_txt}</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div style="background:#F0FDF4;border-radius:8px;padding:12px">
+      <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bull Case</div>
+      <p style="font-size:12px;color:#15803D;margin:0">{bull_txt}</p>
+    </div>
+    <div style="background:#FEF2F2;border-radius:8px;padding:12px">
+      <div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bear Case</div>
+      <p style="font-size:12px;color:#B91C1C;margin:0">{bear_txt}</p>
+    </div>
+  </div>
+  {f'<p style="font-size:12px;color:#6B7280;margin-bottom:10px">Analyst target prices: {tp_txt}</p>' if tp_txt else ""}
+  <div>
+    <span style="font-size:12px;color:#6B7280;margin-right:8px">Final Recommendation</span>
+    <span class="ca-rec {rec_cls}">{rec}</span>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-    rec_color = {"BUY": "🟢", "ACCUMULATE": "🟢", "HOLD": "🟡",
-                 "REDUCE": "🔴", "SELL": "🔴", "AVOID": "🔴"}.get(rec, "🟡")
-    st.markdown(f"### Final Recommendation: {rec_color} **{rec}**")
-
-    with st.expander("🔧 Raw Analysis JSON"):
+    with st.expander("🔧 View Raw Analysis JSON"):
         st.json(result)
 
 
