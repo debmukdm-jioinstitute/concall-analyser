@@ -122,8 +122,8 @@ def fetch_events_for_month(year: int, month: int) -> list[dict]:
             "tag":          style["tag"],
         })
 
-    # FIFO: sort by date ascending, then company name
-    events.sort(key=lambda x: (x["date_key"], x["company"]))
+    # LIFO: sort by date descending — most recent first
+    events.sort(key=lambda x: (x["date_key"], x["company"]), reverse=True)
     return events
 
 

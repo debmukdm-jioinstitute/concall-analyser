@@ -1073,7 +1073,7 @@ with tab2:
 
                 # ── Date detail view ──────────────────────────────────────────────────
                 st.divider()
-                st.subheader("📋 Events by Date — FIFO Order")
+                st.subheader("📋 Events by Date — Latest First")
                 st.caption("All events sorted earliest first. Click to expand details.")
 
                 # Group and display
